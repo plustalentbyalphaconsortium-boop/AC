@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { MOCK_JOBS, JOB_CATEGORIES } from '../constants';
+import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription } from '../types';
-import { PencilIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, BellIcon } from './icons/Icons';
+import { getJobs } from '../api';
+import { PencilIcon, TrashIcon, BellIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
@@ -39,7 +40,6 @@ const JobCard: React.FC<{
     }, [job]);
 
     useEffect(() => {
-        // When job becomes untracked, focus the 'Apply Now' button that appears.
         if (wasTracked && !isTracked) {
             applyButtonRef.current?.focus();
         }
@@ -47,17 +47,14 @@ const JobCard: React.FC<{
     }, [isTracked, wasTracked]);
 
     useEffect(() => {
-        // Don't manage focus on the initial render.
         if (isInitialRender.current) {
             isInitialRender.current = false;
             return;
         }
 
         if (isEditing) {
-            // When the editor opens, move focus to the first interactive element.
             statusSelectRef.current?.focus();
         } else if (isTracked) {
-            // When the editor closes, return focus to the button that opened it.
             updateButtonRef.current?.focus();
         }
     }, [isEditing, isTracked]);
@@ -79,12 +76,19 @@ const JobCard: React.FC<{
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none">
+        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none">
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{job.title}</h3>
                     <p className="text-sm text-blue-600 dark:text-blue-300">{job.company}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{job.location}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {job.location}
+                        {job.salaryMin && job.salaryMax && (
+                            <span className="font-semibold text-gray-600 dark:text-gray-300">
+                                {' | '}${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(job.salaryMin)} - {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(job.salaryMax)}
+                            </span>
+                        )}
+                    </p>
                 </div>
                  <div className="flex flex-col items-end gap-2">
                     <span className="text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300 px-2 py-1 rounded-full">{job.type}</span>
@@ -95,6 +99,12 @@ const JobCard: React.FC<{
                     )}
                 </div>
             </div>
+            {job.qualifications && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Qualifications</h4>
+                    <p className="mt-2 text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap font-mono text-xs">{job.qualifications}</p>
+                </div>
+            )}
             <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm flex-grow">{job.description}</p>
             
             {isEditing && isTracked && (
@@ -128,7 +138,7 @@ const JobCard: React.FC<{
                             aria-label={`Clear tracking for ${job.title} at ${job.company}`}
                             className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 p-1"
                         >
-                            <TrashIcon className="h-3 w-3" /> Clear Tracking
+                            <TrashIcon className="h-3 w-3" aria-hidden="true" /> Clear Tracking
                         </button>
                         <div className="flex gap-2">
                             <button onClick={handleCancel} className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800">Cancel</button>
@@ -150,14 +160,32 @@ const JobCard: React.FC<{
                         aria-label={`Update application status for ${job.title} at ${job.company}`}
                         className="w-full flex items-center justify-center gap-2 rounded-md bg-gray-200 dark:bg-gray-700 px-3.5 py-2.5 text-sm font-semibold text-gray-800 dark:text-white shadow-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
                     >
-                        <PencilIcon className="h-4 w-4" />
+                        <PencilIcon className="h-4 w-4" aria-hidden="true" />
                         Update Status
                     </button>
                 )}
             </div>
-        </div>
+        </li>
     );
 };
+
+const JobCardSkeleton: React.FC = () => (
+    <div className="bg-white dark:bg-gray-800/30 p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 animate-pulse">
+      <div className="flex justify-between items-start">
+        <div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+        </div>
+        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-20"></div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-5/6"></div>
+      </div>
+      <div className="mt-6 h-10 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+    </div>
+);
+
 
 interface FilterButtonGroupProps {
   legend: string;
@@ -178,22 +206,18 @@ const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, ac
     if (activeIndex === -1) return;
 
     let nextIndex = activeIndex;
-    const isHorizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
-    const isVertical = event.key === 'ArrowUp' || event.key === 'ArrowDown';
-
-    if (isHorizontal || isVertical) {
-      event.preventDefault();
-      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
         nextIndex = (activeIndex + 1) % items.length;
-      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
         nextIndex = (activeIndex - 1 + items.length) % items.length;
-      }
-      
-      const nextButton = buttonRefs.current[nextIndex];
-      if (nextButton) {
+    }
+    
+    const nextButton = buttonRefs.current[nextIndex];
+    if (nextButton) {
         nextButton.focus();
         onItemSelect(items[nextIndex]);
-      }
     }
   };
 
@@ -210,7 +234,6 @@ const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, ac
           return (
             <button
               key={item}
-              // FIX: The ref callback was implicitly returning a value, causing a type error. Changed to a block body to ensure it returns void.
               ref={el => { buttonRefs.current[index] = el; }}
               role="radio"
               aria-checked={isActive}
@@ -231,41 +254,67 @@ const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, ac
   );
 };
 
-const JobSearch: React.FC = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
+interface JobSearchProps {
+    initialSearchTerm?: string;
+    initialCategory?: string;
+}
+
+const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCategory = 'All' }) => {
+    const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+    const [activeCategory, setActiveCategory] = useState(initialCategory);
     const [activeStatusFilter, setActiveStatusFilter] = useState('All');
     const [applyingForJob, setApplyingForJob] = useState<Job | null>(null);
     const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
     const [isManageAlertsModalOpen, setIsManageAlertsModalOpen] = useState(false);
-
-    const [jobs, setJobs] = useState<Job[]>(() => {
-        try {
-            const savedJobs = localStorage.getItem('trackedJobs');
-            return savedJobs ? JSON.parse(savedJobs) : MOCK_JOBS;
-        } catch (error) {
-            console.error("Failed to parse tracked jobs from localStorage", error);
-            return MOCK_JOBS;
-        }
-    });
+    
+    const [allJobs, setAllJobs] = useState<Job[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const [subscriptions, setSubscriptions] = useState<JobAlertSubscription[]>(() => {
         try {
             const savedSubs = localStorage.getItem('jobAlertSubscriptions');
             return savedSubs ? JSON.parse(savedSubs) : [];
-        } catch (error) {
-            console.error("Failed to parse subscriptions from localStorage", error);
+        } catch {
             return [];
         }
     });
+    
+    const fetchAndMergeJobs = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const baseJobs = await getJobs();
+            const trackedJobsData = localStorage.getItem('trackedJobs');
+            const trackedUpdates: { [key: number]: Partial<Pick<Job, 'applicationStatus' | 'notes'>> } = trackedJobsData ? JSON.parse(trackedJobsData) : {};
+            
+            const mergedJobs = baseJobs.map(job => ({
+                ...job,
+                ...(trackedUpdates[job.id] || {}),
+            }));
+            
+            setAllJobs(mergedJobs);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        try {
-            localStorage.setItem('trackedJobs', JSON.stringify(jobs));
-        } catch (error) {
-            console.error("Failed to save jobs to localStorage", error);
-        }
-    }, [jobs]);
+        fetchAndMergeJobs();
+    }, []);
+
+    // Effect to handle initial search parameters from props (e.g., command bar)
+    useEffect(() => {
+        setSearchTerm(initialSearchTerm);
+        setActiveCategory(initialCategory);
+    }, [initialSearchTerm, initialCategory]);
     
     useEffect(() => {
         try {
@@ -291,12 +340,30 @@ const JobSearch: React.FC = () => {
         );
     }, [subscriptions, searchTerm, activeCategory]);
 
+    const updateLocalStorage = (updatedJobs: Job[]) => {
+        const trackedUpdates = updatedJobs.reduce((acc, job) => {
+            if (job.applicationStatus) {
+                acc[job.id] = {
+                    applicationStatus: job.applicationStatus,
+                    notes: job.notes,
+                };
+            }
+            return acc;
+        }, {} as { [key: number]: Partial<Pick<Job, 'applicationStatus' | 'notes'>> });
+
+        if (Object.keys(trackedUpdates).length > 0) {
+            localStorage.setItem('trackedJobs', JSON.stringify(trackedUpdates));
+        } else {
+            localStorage.removeItem('trackedJobs');
+        }
+    };
+
     const handleUpdateJob = (jobId: number, updates: Partial<Pick<Job, 'applicationStatus' | 'notes'>>) => {
-        setJobs(prevJobs =>
-            prevJobs.map(job =>
-                job.id === jobId ? { ...job, ...updates } : job
-            )
+        const updatedJobs = allJobs.map(job =>
+            job.id === jobId ? { ...job, ...updates } : job
         );
+        setAllJobs(updatedJobs);
+        updateLocalStorage(updatedJobs);
     };
     
     const handleApplicationSubmit = (jobId: number) => {
@@ -307,20 +374,20 @@ const JobSearch: React.FC = () => {
     };
 
     const handleClearTracking = (jobId: number) => {
-        setJobs(prevJobs =>
-            prevJobs.map(job => {
-                if (job.id === jobId) {
-                    const { applicationStatus, notes, ...rest } = job;
-                    return rest;
-                }
-                return job;
-            })
-        );
+        const updatedJobs = allJobs.map(job => {
+            if (job.id === jobId) {
+                const { applicationStatus, notes, ...rest } = job;
+                return rest;
+            }
+            return job;
+        });
+        setAllJobs(updatedJobs);
+        updateLocalStorage(updatedJobs);
     };
     
     const STATUS_FILTERS = ['All', 'Tracked', ...APPLICATION_STATUSES];
 
-    const filteredJobs = jobs.filter(job => {
+    const filteredJobs = useMemo(() => allJobs.filter(job => {
         const matchesCategory = activeCategory === 'All' || job.category === activeCategory;
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) 
             || job.company.toLowerCase().includes(searchTerm.toLowerCase())
@@ -333,7 +400,45 @@ const JobSearch: React.FC = () => {
         })();
 
         return matchesCategory && matchesSearch && matchesStatus;
-    });
+    }), [allJobs, activeCategory, searchTerm, activeStatusFilter]);
+    
+    const resultsCount = filteredJobs.length;
+    const resultsText = `${resultsCount} job${resultsCount !== 1 ? 's' : ''} found.`;
+
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                 <ul className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Array.from({ length: 6 }).map((_, i) => <li key={i}><JobCardSkeleton /></li>)}
+                </ul>
+            );
+        }
+
+        if (error) {
+            return (
+                <div role="alert" className="mt-16 text-center text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-6 rounded-lg">
+                    <h3 className="font-bold">An Error Occurred</h3>
+                    <p>{error}</p>
+                    <button onClick={fetchAndMergeJobs} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500">
+                        Try Again
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <h3 id="job-results-heading" className="sr-only">Job Search Results</h3>
+                <ul aria-labelledby="job-results-heading" className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredJobs.length > 0 ? (
+                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} />)
+                    ) : (
+                        <p className="text-gray-500 dark:text-gray-400 col-span-full text-center">No jobs found matching your criteria.</p>
+                    )}
+                </ul>
+            </>
+        );
+    };
 
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
@@ -374,7 +479,7 @@ const JobSearch: React.FC = () => {
                 <div className="mt-12 max-w-4xl mx-auto">
                     <div className="bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm p-4 rounded-lg border border-blue-200 dark:border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <BellIcon className="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" />
+                            <BellIcon className="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" aria-hidden="true" />
                             <div>
                                 <h4 className="font-semibold text-blue-800 dark:text-blue-200">Job Alerts</h4>
                                 <p className="text-blue-700 dark:text-blue-300/90 text-sm">
@@ -413,13 +518,11 @@ const JobSearch: React.FC = () => {
                     </div>
                 </div>
 
-
-                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredJobs.length > 0 ? (
-                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} />)
-                    ) : (
-                        <p className="text-gray-500 dark:text-gray-400 col-span-full text-center">No jobs found matching your criteria.</p>
-                    )}
+                <div className="mt-4 text-center">
+                    <div className="sr-only" aria-live="polite" aria-atomic="true">
+                        {!isLoading && resultsText}
+                    </div>
+                    {renderContent()}
                 </div>
             </div>
 

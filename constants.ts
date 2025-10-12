@@ -1,4 +1,3 @@
-
 import { Job, Course, HRService } from './types';
 import { BriefcaseIcon, AcademicCapIcon, UserGroupIcon, BuildingOffice2Icon, CreditCardIcon, ChartBarIcon } from './components/icons/Icons';
 

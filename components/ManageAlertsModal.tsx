@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { JobAlertSubscription } from '../types';
 import { XMarkIcon, BellIcon, TrashIcon } from './icons/Icons';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 interface ManageAlertsModalProps {
     onClose: () => void;
@@ -9,85 +10,19 @@ interface ManageAlertsModalProps {
 }
 
 const ManageAlertsModal: React.FC<ManageAlertsModalProps> = ({ onClose, subscriptions, onDelete }) => {
-    const modalRef = useRef<HTMLDivElement>(null);
-    const triggerElementRef = useRef<HTMLElement | null>(null);
-
-    // Capture the trigger element on mount and restore focus on unmount
-    useEffect(() => {
-        triggerElementRef.current = document.activeElement as HTMLElement;
-
-        return () => {
-            triggerElementRef.current?.focus();
-        };
-    }, []);
-
-    // Handle focus trapping, initial focus, and body overflow
-    useEffect(() => {
-        const modalNode = modalRef.current;
-        if (!modalNode) return;
-
-        const focusableElements = Array.from(
-            modalNode.querySelectorAll<HTMLElement>(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            )
-        ).filter(el => !el.hasAttribute('disabled'));
-        
-        // Set initial focus
-        if (focusableElements.length > 0) {
-            focusableElements[0].focus();
-        } else {
-            modalNode.focus();
-        }
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-                return;
-            }
-
-            if (event.key === 'Tab') {
-                if (focusableElements.length === 0) {
-                    event.preventDefault();
-                    return;
-                }
-
-                const firstElement = focusableElements[0];
-                const lastElement = focusableElements[focusableElements.length - 1];
-
-                if (event.shiftKey) { // Shift+Tab
-                    if (document.activeElement === firstElement) {
-                        lastElement.focus();
-                        event.preventDefault();
-                    }
-                } else { // Tab
-                    if (document.activeElement === lastElement) {
-                        firstElement.focus();
-                        event.preventDefault();
-                    }
-                }
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = 'hidden';
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = 'auto';
-        };
-    }, [onClose, subscriptions]);
+    const modalRef = useModalFocus(onClose, true);
 
     return (
         <div 
-            ref={modalRef}
             className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4 transition-opacity duration-300"
             onClick={onClose}
             aria-modal="true"
             role="dialog"
             aria-labelledby="manage-alerts-modal-title"
-            tabIndex={-1}
         >
             <div 
+                ref={modalRef}
+                tabIndex={-1}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl mx-auto transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
                 onClick={(e) => e.stopPropagation()}
                 style={{ animationFillMode: 'forwards' }}
@@ -98,7 +33,7 @@ const ManageAlertsModal: React.FC<ManageAlertsModalProps> = ({ onClose, subscrip
                         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                         aria-label="Close"
                     >
-                        <XMarkIcon className="h-6 w-6" />
+                        <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                     </button>
                     
                     <div className="flex items-center gap-3 mb-4">
@@ -126,7 +61,7 @@ const ManageAlertsModal: React.FC<ManageAlertsModalProps> = ({ onClose, subscrip
                                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full transition-colors"
                                             aria-label={`Delete alert for ${sub.email}`}
                                         >
-                                            <TrashIcon className="h-5 w-5" />
+                                            <TrashIcon className="h-5 w-5" aria-hidden="true" />
                                         </button>
                                     </li>
                                 ))}
