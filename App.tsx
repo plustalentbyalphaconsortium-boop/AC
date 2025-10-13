@@ -16,6 +16,7 @@ import { View, Feature, AICommand } from './types';
 // FIX: Import AcademicCapIcon
 import { SparklesIcon, ChatBubbleOvalLeftEllipsisIcon, RocketLaunchIcon, MagnifyingGlassIcon, MicrophoneIcon, AcademicCapIcon } from './components/icons/Icons';
 
+
 interface JobSearchState {
     searchTerm: string;
     category: string;
@@ -46,7 +47,7 @@ const App: React.FC = () => {
         setTimeout(() => {
             setActiveView(view);
             setIsTransitioning(false);
-        }, 400);
+        }, 400); // Match animation duration
     } else {
         setActiveView(view);
     }
@@ -66,6 +67,7 @@ const App: React.FC = () => {
         });
         handleSetView(View.Jobs);
         break;
+      // Add more cases for other actions here
     }
     setIsCommandBarOpen(false);
   };

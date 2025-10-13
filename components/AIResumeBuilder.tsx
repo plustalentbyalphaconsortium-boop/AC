@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon } from './icons/Icons';
+import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon, DocumentArrowDownIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
 import { AIResumeData } from '../types';
+
+declare const jspdf: any;
 
 type Template = 'Modern' | 'Classic' | 'Compact';
 type Tone = 'Professional' | 'Creative' | 'Bold';
@@ -397,6 +399,102 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         setTimeout(() => setCoverLetterCopied(false), 2000);
     };
 
+    const handleDownloadPdf = () => {
+        if (!generatedResume) return;
+        
+        const { jsPDF } = jspdf;
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const { headline, summary, keySkills, experienceHighlights } = generatedResume;
+
+        const FONT = 'Helvetica';
+        const MARGIN = 15;
+        const PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+        const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+        let y = 20;
+
+        const checkPageBreak = (heightNeeded: number) => {
+            if (y + heightNeeded > PAGE_HEIGHT - MARGIN) {
+                doc.addPage();
+                y = MARGIN;
+            }
+        };
+
+        // --- Headline ---
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(40, 40, 40); // Dark grey
+        doc.text(headline, PAGE_WIDTH / 2, y, { align: 'center', maxWidth: CONTENT_WIDTH });
+        y += doc.getTextDimensions(headline, { maxWidth: CONTENT_WIDTH }).h + 8;
+
+        // --- Line Separator ---
+        doc.setDrawColor(50, 93, 168); // A nice blue
+        doc.setLineWidth(0.5);
+        doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
+        y += 10;
+        
+        // --- Summary Section ---
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(50, 93, 168);
+        doc.text('Professional Summary', MARGIN, y);
+        y += 8;
+
+        doc.setFont(FONT, 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(51, 51, 51);
+        const summaryLines = doc.splitTextToSize(summary, CONTENT_WIDTH);
+        checkPageBreak(summaryLines.length * 6);
+        doc.text(summaryLines, MARGIN, y);
+        y += summaryLines.length * 6 + 10;
+
+        // --- Key Skills Section ---
+        checkPageBreak(14); // for header
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(50, 93, 168);
+        doc.text('Key Skills', MARGIN, y);
+        y += 8;
+
+        doc.setFont(FONT, 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(51, 51, 51);
+        let currentX = MARGIN;
+        const bulletPointSpacing = 12; // horizontal spacing between items
+        keySkills.forEach(skill => {
+            const skillWidth = doc.getTextWidth(`• ${skill}`) + bulletPointSpacing;
+            if (currentX + skillWidth > PAGE_WIDTH - MARGIN) {
+                currentX = MARGIN;
+                y += 7;
+            }
+            checkPageBreak(7);
+            doc.text(`• ${skill}`, currentX, y);
+            currentX += skillWidth;
+        });
+        y += 12;
+
+        // --- Experience Highlights Section ---
+        checkPageBreak(14); // for header
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(50, 93, 168);
+        doc.text('Experience Highlights', MARGIN, y);
+        y += 8;
+        
+        doc.setFont(FONT, 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(51, 51, 51);
+        experienceHighlights.forEach(highlight => {
+            const highlightLines = doc.splitTextToSize(highlight, CONTENT_WIDTH - 5); // Indent for bullet
+            checkPageBreak(highlightLines.length * 6 + 4);
+            doc.text('•', MARGIN, y);
+            doc.text(highlightLines, MARGIN + 5, y);
+            y += highlightLines.length * 6 + 4;
+        });
+
+        doc.save('AI-Generated-Resume.pdf');
+    };
+
     const isLoading = isLoadingResume || isLoadingCoverLetter;
 
     const RadioButtonGroup = ({ label, items, selectedItem, onSelect, disabled }: {label: string, items: string[], selectedItem: string, onSelect: (item: string) => void, disabled: boolean}) => (
@@ -552,9 +650,14 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                                 Generated Preview
                             </h3>
                              {activeTool === 'resume' && generatedResume && !isLoading && (
-                                <button onClick={handleCopyResume} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-500">
-                                    <ClipboardIcon className="h-5 w-5" /> {resumeCopied ? 'Copied!' : 'Copy Text'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={handleCopyResume} className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800/60">
+                                        <ClipboardIcon className="h-4 w-4" /> {resumeCopied ? 'Copied!' : 'Copy'}
+                                    </button>
+                                     <button onClick={handleDownloadPdf} className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-500">
+                                        <DocumentArrowDownIcon className="h-4 w-4" /> PDF
+                                    </button>
+                                </div>
                             )}
                             {activeTool === 'coverLetter' && generatedCoverLetter && !isLoading && (
                                 <button onClick={handleCopyCoverLetter} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-500">

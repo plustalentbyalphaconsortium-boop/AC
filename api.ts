@@ -15,6 +15,7 @@ export class ApiError extends Error {
     }
 }
 
+
 const simulateApiCall = <T>(data: T, resourceName: string): Promise<T> => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -40,6 +41,8 @@ const simulateApiCall = <T>(data: T, resourceName: string): Promise<T> => {
 };
 
 export const getJobs = (): Promise<Job[]> => {
+    // The functionality to post jobs has been removed, so we no longer merge
+    // jobs from localStorage. We directly return the mock jobs.
     return simulateApiCall(MOCK_JOBS, 'job listings');
 };
 
