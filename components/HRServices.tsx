@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { HRService } from '../types';
 import { getHRServices } from '../api';
-import { View } from '../App';
-import { DocumentPlusIcon } from './icons/Icons';
+import { View } from '../types';
+import { DocumentPlusIcon, DocumentTextIcon } from './icons/Icons';
 
 const ServiceCardSkeleton: React.FC = () => (
     <div className="bg-white dark:bg-gray-800/30 p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 animate-pulse">
@@ -109,6 +109,20 @@ const HRServices: React.FC<HRServicesProps> = ({ setActiveView }) => {
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Post a Job</h3>
                                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Create a new job listing with our AI-powered assistant to find the perfect candidate.</p>
+                            </div>
+                        </div>
+                    </button>
+                     <button
+                        onClick={() => setActiveView(View.CandidateSummarizer)}
+                        className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-blue-500 dark:border-blue-400 hover:border-blue-600 transition-all duration-300 shadow-lg dark:shadow-none text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a2a1a] transform hover:-translate-y-1"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">
+                                <DocumentTextIcon className="h-6 w-6" aria-hidden="true" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">AI Candidate Summarizer</h3>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Get instant, AI-powered summaries of resumes to speed up your screening process.</p>
                             </div>
                         </div>
                     </button>

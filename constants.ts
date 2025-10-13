@@ -1,5 +1,6 @@
+// FIX: Import missing types and icons.
 import { Job, Course, HRService } from './types';
-import { BriefcaseIcon, AcademicCapIcon, UserGroupIcon, BuildingOffice2Icon, CreditCardIcon, ChartBarIcon } from './components/icons/Icons';
+import { BriefcaseIcon, AcademicCapIcon, ClipboardIcon, LightbulbIcon } from './components/icons/Icons';
 
 export const JOB_CATEGORIES: string[] = [
     'All',
@@ -24,16 +25,17 @@ export const MOCK_JOBS: Job[] = [
   { id: 8, title: 'Front Desk Receptionist', company: 'Global Ventures', location: 'Miami, FL', type: 'Full-time', category: 'Receptionist', description: 'Be the first point of contact for our visitors and clients.' },
 ];
 
+// FIX: Added missing mock data constants.
 export const MOCK_COURSES: Course[] = [
-  { id: 1, title: 'Advanced Sales Techniques', description: 'Master the art of closing deals and exceeding targets.', duration: '6 Weeks', icon: BriefcaseIcon },
-  { id: 2, title: 'Digital Marketing Fundamentals', description: 'Learn SEO, SEM, and social media marketing from scratch.', duration: '8 Weeks', icon: ChartBarIcon },
-  { id: 3, title: 'Customer Service Excellence', description: 'Develop skills to provide outstanding customer support.', duration: '4 Weeks', icon: UserGroupIcon },
-  { id: 4, title: 'Adobe Creative Suite Mastery', description: 'Become proficient in Photoshop, Illustrator, and Premiere Pro.', duration: '12 Weeks', icon: AcademicCapIcon },
+  { id: 1, title: 'Advanced Sales Techniques', description: 'Master the art of closing deals and building lasting client relationships.', duration: '4 Weeks', icon: BriefcaseIcon },
+  { id: 2, title: 'Digital Marketing Fundamentals', description: 'Learn SEO, SEM, and social media marketing from the ground up.', duration: '6 Weeks', icon: LightbulbIcon },
+  { id: 3, title: 'Customer Service Excellence', description: 'Turn customers into brand advocates with exceptional service skills.', duration: '3 Weeks', icon: AcademicCapIcon },
+  { id: 4, title: 'Project Management Professional (PMP) Prep', description: 'Prepare for the PMP certification with this comprehensive course.', duration: '8 Weeks', icon: ClipboardIcon },
 ];
 
 export const MOCK_HR_SERVICES: HRService[] = [
-  { id: 1, title: 'Job Posting', description: 'Reach thousands of qualified candidates by posting on our platform.', icon: BriefcaseIcon },
-  { id: 2, title: 'Recruitment Process Outsourcing (RPO)', description: 'Let our experts handle your entire recruitment lifecycle.', icon: UserGroupIcon },
-  { id: 3, title: 'Staffing & Payroll Solutions', description: 'Flexible staffing and streamlined payroll services for your business.', icon: CreditCardIcon },
-  { id: 4, title: 'Workforce Training & Development', description: 'Customized training programs to upskill your employees.', icon: BuildingOffice2Icon },
+    { id: 1, title: 'Talent Sourcing', description: 'Leverage our network to find top-tier candidates for any role.', icon: BriefcaseIcon },
+    { id: 2, title: 'Onboarding Solutions', description: 'Streamline your new hire process for better retention.', icon: ClipboardIcon },
+    { id: 3, title: 'Leadership Training', description: 'Develop your managers into effective leaders with our proven programs.', icon: AcademicCapIcon },
+    { id: 4, title: 'HR Compliance Audits', description: 'Ensure your HR practices are up-to-date and compliant with all regulations.', icon: LightbulbIcon },
 ];

@@ -3,7 +3,7 @@ import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { UserProfile, CareerPathData, Course } from '../types';
 import { RocketLaunchIcon, SparklesIcon, BriefcaseIcon, LightbulbIcon, CheckCircleIcon, AcademicCapIcon } from './icons/Icons';
 import { MOCK_COURSES } from '../constants';
-import { View } from '../App';
+import { View } from '../types';
 
 const ResultCard: React.FC<{
     icon: React.ComponentType<{ className?: string }>;

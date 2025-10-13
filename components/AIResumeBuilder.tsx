@@ -1,23 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon, VideoCameraIcon, XMarkIcon } from './icons/Icons';
+import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
 import { AIResumeData } from '../types';
 
 type Template = 'Modern' | 'Classic' | 'Compact';
 type Tone = 'Professional' | 'Creative' | 'Bold';
-type ActiveTool = 'resume' | 'coverLetter' | 'videoPitch';
-
-const videoLoadingMessages = [
-    "Initializing video generation...",
-    "Analyzing your prompt and image...",
-    "Storyboarding the scene...",
-    "Rendering initial frames (this can take a moment)...",
-    "Adding details and motion...",
-    "Finalizing the video stream...",
-    "Almost there, preparing your video..."
-];
-
+type ActiveTool = 'resume' | 'coverLetter';
 
 const ResumePreview: React.FC<{
     data: AIResumeData;
@@ -131,17 +120,8 @@ const AIResumeBuilder: React.FC = () => {
     const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
     const [isLoadingCoverLetter, setIsLoadingCoverLetter] = useState(false);
     const [coverLetterCopied, setCoverLetterCopied] = useState(false);
-    
-    // Video-specific state
-    const [videoPrompt, setVideoPrompt] = useState('');
-    const [videoImage, setVideoImage] = useState<{ base64: string; mimeType: string; name: string; } | null>(null);
-    const [isLoadingVideo, setIsLoadingVideo] = useState(false);
-    const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
-    const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
-    const [videoError, setVideoError] = useState('');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const videoFileInputRef = useRef<HTMLInputElement>(null);
     const jobDescriptionRef = useRef<HTMLTextAreaElement>(null);
 
     const templates: Template[] = ['Modern', 'Classic', 'Compact'];
@@ -165,9 +145,6 @@ const AIResumeBuilder: React.FC = () => {
             case 'coverLetter':
                 handleGenerateCoverLetter();
                 break;
-            case 'videoPitch':
-                handleGenerateVideoPitch();
-                break;
         }
     };
 
@@ -189,32 +166,6 @@ const AIResumeBuilder: React.FC = () => {
             setIsParsingFile(false);
         }
         event.target.value = '';
-    };
-
-    const handleVideoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            setVideoError('Please upload a valid image file (JPEG, PNG, WEBP).');
-            return;
-        }
-        
-        setVideoError('');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64 = (e.target?.result as string).split(',')[1];
-            setVideoImage({ base64, mimeType: file.type, name: file.name });
-        };
-        reader.onerror = () => setVideoError('Failed to read the image file.');
-        reader.readAsDataURL(file);
-    };
-
-    const removeVideoImage = () => {
-        setVideoImage(null);
-        if (videoFileInputRef.current) {
-            videoFileInputRef.current.value = '';
-        }
     };
 
     const resumeSchema = {
@@ -357,69 +308,6 @@ const AIResumeBuilder: React.FC = () => {
             setIsLoadingCoverLetter(false);
         }
     };
-
-    const handleGenerateVideoPitch = async () => {
-        if (!videoPrompt) {
-            setVideoError('Please enter a prompt to generate a video.');
-            return;
-        }
-
-        setIsLoadingVideo(true);
-        setVideoError('');
-        setGeneratedVideoUrl(null);
-
-        let messageIndex = 0;
-        setVideoLoadingMessage(videoLoadingMessages[messageIndex]);
-        const messageInterval = setInterval(() => {
-            messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
-            setVideoLoadingMessage(videoLoadingMessages[messageIndex]);
-        }, 8000);
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
-            const requestPayload: any = {
-                model: 'veo-2.0-generate-001',
-                prompt: videoPrompt,
-                config: { numberOfVideos: 1 }
-            };
-
-            if (videoImage) {
-                requestPayload.image = {
-                    imageBytes: videoImage.base64,
-                    mimeType: videoImage.mimeType
-                };
-            }
-
-            let operation = await ai.models.generateVideos(requestPayload);
-
-            while (!operation.done) {
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                operation = await ai.operations.getVideosOperation({ operation: operation });
-            }
-
-            const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-
-            if (downloadLink) {
-                const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
-                if (!videoResponse.ok) {
-                    throw new Error(`Failed to download video: ${videoResponse.statusText}`);
-                }
-                const videoBlob = await videoResponse.blob();
-                const videoUrl = URL.createObjectURL(videoBlob);
-                setGeneratedVideoUrl(videoUrl);
-            } else {
-                throw new Error("Video generation completed, but no download link was provided.");
-            }
-
-        } catch (e: any) {
-            console.error(e);
-            setVideoError(`An error occurred during video generation: ${e.message}. Please try again.`);
-        } finally {
-            setIsLoadingVideo(false);
-            clearInterval(messageInterval);
-        }
-    };
     
     const handleRegenerateSkills = async () => {
         if (!jobDescription || !userExperience) {
@@ -509,7 +397,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         setTimeout(() => setCoverLetterCopied(false), 2000);
     };
 
-    const isLoading = isLoadingResume || isLoadingCoverLetter || isLoadingVideo;
+    const isLoading = isLoadingResume || isLoadingCoverLetter;
 
     const RadioButtonGroup = ({ label, items, selectedItem, onSelect, disabled }: {label: string, items: string[], selectedItem: string, onSelect: (item: string) => void, disabled: boolean}) => (
         <div>
@@ -542,57 +430,6 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
     );
     
     const renderActiveToolInputs = () => {
-        if (activeTool === 'videoPitch') {
-            return (
-                 <div className="space-y-6">
-                    <div>
-                        <label htmlFor="video-prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            1. Describe your video pitch
-                        </label>
-                        <textarea
-                            id="video-prompt"
-                            rows={6}
-                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g., A 3D animation of my professional logo, with sparkling particle effects"
-                            value={videoPrompt}
-                            onChange={(e) => setVideoPrompt(e.target.value)}
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div>
-                        <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            2. Add a starting image (Optional)
-                        </span>
-                         <input
-                            type="file"
-                            ref={videoFileInputRef}
-                            className="hidden"
-                            accept="image/png, image/jpeg, image/webp"
-                            onChange={handleVideoFileChange}
-                            disabled={isLoading}
-                        />
-                        {videoImage ? (
-                            <div className="mt-2 relative">
-                                <img src={`data:${videoImage.mimeType};base64,${videoImage.base64}`} alt="Preview" className="rounded-lg w-full max-h-40 object-cover border border-gray-300 dark:border-gray-600" />
-                                 <button onClick={removeVideoImage} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/75" aria-label="Remove image">
-                                    <XMarkIcon className="h-4 w-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => videoFileInputRef.current?.click()}
-                                className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                disabled={isLoading}
-                            >
-                                Click to upload image
-                            </button>
-                        )}
-                        {videoError && <p className="text-red-500 text-sm mt-2">{videoError}</p>}
-                    </div>
-                </div>
-            );
-        }
-
         // Resume and Cover Letter Inputs
         return (
             <div className="space-y-6">
@@ -671,7 +508,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
             <div className="max-w-4xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">AI Application Assistant</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Craft a resume, cover letter, or video pitch that stands out. Tailor your application in seconds.</p>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Craft a resume or cover letter that stands out. Tailor your application in seconds.</p>
                 </div>
 
                 <div className="mt-8 border-b border-gray-300 dark:border-gray-700 flex justify-center">
@@ -700,18 +537,6 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                         >
                             Cover Letter Writer
                         </button>
-                        <button
-                            role="tab"
-                            aria-selected={activeTool === 'videoPitch'}
-                            onClick={() => setActiveTool('videoPitch')}
-                            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 ${
-                                activeTool === 'videoPitch'
-                                ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                            }`}
-                        >
-                            Video Pitch
-                        </button>
                     </div>
                 </div>
 
@@ -724,7 +549,6 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 {activeTool === 'resume' && <SparklesIcon className="h-5 w-5 text-blue-500 dark:text-blue-400" />}
                                 {activeTool === 'coverLetter' && <EnvelopeIcon className="h-5 w-5 text-blue-500 dark:text-blue-400" />}
-                                {activeTool === 'videoPitch' && <VideoCameraIcon className="h-5 w-5 text-blue-500 dark:text-blue-400" />}
                                 Generated Preview
                             </h3>
                              {activeTool === 'resume' && generatedResume && !isLoading && (
@@ -742,15 +566,10 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                              {isLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
-                                    {activeTool === 'videoPitch' && <p className="mt-4 text-gray-600 dark:text-gray-300 font-semibold">{videoLoadingMessage}</p>}
                                 </div>
                             ) : error ? (
                                 <div className="flex items-center justify-center h-full p-4">
                                     <p className="text-red-500 dark:text-red-400 text-center">{error}</p>
-                                </div>
-                            ) : videoError ? (
-                                <div className="flex items-center justify-center h-full p-4">
-                                    <p className="text-red-500 dark:text-red-400 text-center">{videoError}</p>
                                 </div>
                             ) : activeTool === 'resume' ? (
                                 generatedResume ? (
@@ -765,32 +584,12 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                                         <p className="text-gray-400 dark:text-gray-500 text-center">Your AI-tailored resume content will appear here.</p>
                                     </div>
                                 )
-                            ) : activeTool === 'coverLetter' ? (
+                            ) : ( // Cover Letter View
                                 generatedCoverLetter ? (
                                     <CoverLetterPreview text={generatedCoverLetter} />
                                 ) : (
                                     <div className="flex items-center justify-center h-full select-none p-4">
                                         <p className="text-gray-400 dark:text-gray-500 text-center">Your AI-generated cover letter will appear here.</p>
-                                    </div>
-                                )
-                            ) : ( // Video View
-                                generatedVideoUrl ? (
-                                     <div className="w-full animate-scale-in">
-                                        <video src={generatedVideoUrl} controls autoPlay loop className="w-full rounded-md" />
-                                        <div className="mt-4 text-center">
-                                            <a
-                                                href={generatedVideoUrl}
-                                                download={`alpha-video-pitch.mp4`}
-                                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
-                                            >
-                                                Download Video
-                                            </a>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full select-none p-4">
-                                        <VideoCameraIcon className="h-12 w-12 text-gray-400 dark:text-gray-500" />
-                                        <p className="text-gray-400 dark:text-gray-500 text-center mt-2">Your AI-generated video pitch will appear here.</p>
                                     </div>
                                 )
                             )}
@@ -804,10 +603,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                         <div>
                             <h4 className="font-semibold text-blue-800 dark:text-blue-200">Pro Tip:</h4>
                             <p className="text-blue-700 dark:text-blue-300/90 text-sm">
-                                {activeTool === 'videoPitch' 
-                                    ? "Be descriptive in your video prompt! Mention style (e.g., 'cinematic', 'minimalist'), colors, and action to guide the AI. Video generation can take a few minutes."
-                                    : "The more detail you provide, the better the AI's suggestions will be. Use the 'Key Achievements' section to highlight your best work and quantify your results with numbers (e.g., 'Increased sales by 20%') for the strongest impact."
-                                }
+                                The more detail you provide, the better the AI's suggestions will be. Use the 'Key Achievements' section to highlight your best work and quantify your results with numbers (e.g., 'Increased sales by 20%') for the strongest impact.
                             </p>
                         </div>
                     </div>
@@ -816,7 +612,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                 <div className="mt-8 text-center">
                     <button
                         onClick={handleMainAction}
-                        disabled={isLoading || isParsingFile || (activeTool !== 'videoPitch' && (!jobDescription || !userExperience)) || (activeTool === 'videoPitch' && !videoPrompt)}
+                        disabled={isLoading || isParsingFile || !jobDescription || !userExperience}
                         className="inline-flex items-center justify-center rounded-md bg-blue-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
                     >
                         {isLoading ? (
@@ -832,15 +628,10 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                                 <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                                 Generate Resume
                             </>
-                        ) : activeTool === 'coverLetter' ? (
+                        ) : (
                             <>
                                 <EnvelopeIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                                 Generate Cover Letter
-                            </>
-                        ) : (
-                             <>
-                                <VideoCameraIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                                Generate Video Pitch
                             </>
                         )}
                     </button>

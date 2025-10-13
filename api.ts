@@ -1,3 +1,4 @@
+// FIX: Import missing types and constants
 import { MOCK_JOBS, MOCK_COURSES, MOCK_HR_SERVICES } from './constants';
 import { Job, Course, HRService } from './types';
 
@@ -40,29 +41,12 @@ const simulateApiCall = <T>(data: T, resourceName: string): Promise<T> => {
 };
 
 export const getJobs = (): Promise<Job[]> => {
-    return new Promise((resolve, reject) => {
-        try {
-            const savedJobsData = localStorage.getItem('postedJobs');
-            const postedJobs: Job[] = savedJobsData ? JSON.parse(savedJobsData) : [];
-            
-            // Prepend posted jobs so they appear first
-            const allJobs = [...postedJobs, ...MOCK_JOBS];
-
-            // Now, simulate the API call with the combined data
-            simulateApiCall(allJobs, 'job listings')
-                .then(resolve)
-                .catch(reject);
-
-        } catch (error) {
-            console.error("Failed to read posted jobs from localStorage", error);
-            // Fallback to just mock jobs if localStorage is corrupt
-            simulateApiCall(MOCK_JOBS, 'job listings')
-                .then(resolve)
-                .catch(reject);
-        }
-    });
+    // The functionality to post jobs has been removed, so we no longer merge
+    // jobs from localStorage. We directly return the mock jobs.
+    return simulateApiCall(MOCK_JOBS, 'job listings');
 };
 
+// FIX: Add missing API functions
 export const getCourses = (): Promise<Course[]> => {
     return simulateApiCall(MOCK_COURSES, 'courses');
 };

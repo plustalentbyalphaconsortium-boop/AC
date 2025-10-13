@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View } from '../App';
+import { View } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { SunIcon, MoonIcon, Bars3Icon, XMarkIcon, CommandLineIcon } from './icons/Icons';
 
@@ -48,12 +48,12 @@ const NavItem: React.FC<{ title: string; active: boolean; onClick: () => void; i
   <button
     onClick={onClick}
     aria-pressed={active}
-    className={`px-3 py-2 font-medium rounded-md transition-all duration-300 w-full text-left ${
+    className={`px-3 py-2 rounded-md transition-all duration-300 w-full text-left ${
       isMobile ? 'text-lg' : 'text-sm'
     } ${
       active
-        ? 'text-white bg-blue-600 dark:bg-blue-500/20'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
+        ? 'font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-500/20 shadow-inner'
+        : 'font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
     }`}
   >
     {title}
@@ -78,6 +78,16 @@ const ThemeToggle: React.FC = () => {
     );
 };
 
+const navItems: { view: View; title: string }[] = [
+    { view: View.Home, title: 'Home' },
+    { view: View.Jobs, title: 'Find a Job' },
+    { view: View.AIAssistant, title: 'AI Assistant' },
+    { view: View.AIResume, title: 'AI Resume' },
+    { view: View.CareerPath, title: 'Career Path' },
+    { view: View.InterviewPrep, title: 'Interview Prep' },
+    { view: View.Academy, title: 'Academy' },
+];
+
 
 const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenCommandBar }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -86,21 +96,6 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
   useEffect(() => {
     setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
   }, []);
-
-  const navItems: { view: View; title: string }[] = [
-    { view: View.Home, title: 'Home' },
-    { view: View.Dashboard, title: 'My Dashboard' },
-    { view: View.CloudSync, title: 'Cloud Sync' },
-    { view: View.Jobs, title: 'Find a Job' },
-    { view: View.AIResume, title: 'AI Resume' },
-    { view: View.CareerPath, title: 'Career Path' },
-    { view: View.SkillCoach, title: 'Skill Coach' },
-    { view: View.InterviewPrep, title: 'Interview Prep' },
-    { view: View.VideoGenerator, title: 'AI Video Gen' },
-    { view: View.MarketTrends, title: 'Market Trends' },
-    { view: View.Academy, title: 'Alpha Academy' },
-    { view: View.Employers, title: 'For Employers' },
-  ];
 
   const handleNavClick = (view: View) => {
     setActiveView(view);

@@ -28,6 +28,11 @@
       body {
         font-family: 'Poppins', sans-serif;
       }
+      .dark body {
+        background-color: #0c0a18;
+        background-image: 
+          radial-gradient(ellipse 80% 80% at 50% -20%,rgba(33, 41, 92,0.5), rgba(255,255,255,0));
+      }
       .font-orbitron {
         font-family: 'Orbitron', sans-serif;
       }
@@ -93,6 +98,26 @@
       }
       .animate-celebratory-bounce {
         animation: celebratory-bounce 0.8s ease-in-out;
+      }
+       @keyframes orbital-glow {
+        0%, 100% { box-shadow: 0 0 8px 2px rgba(65, 105, 225, 0.4); }
+        50% { box-shadow: 0 0 16px 4px rgba(65, 105, 225, 0.6); }
+      }
+      .animate-orbital-glow {
+        animation: orbital-glow 4s ease-in-out infinite;
+      }
+      @keyframes zoom-out-view {
+          from {
+              opacity: 1;
+              transform: scale(1);
+          }
+          to {
+              opacity: 0;
+              transform: scale(2);
+          }
+      }
+      .animate-zoom-out-view {
+          animation: zoom-out-view 0.4s cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
       }
     </style>
   <script type="importmap">

@@ -1,16 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Job, UserProfile, AICoverLetterSuggestions } from '../types';
-import { XMarkIcon, BriefcaseIcon, SparklesIcon } from './icons/Icons';
+import { Job, UserProfile, AICoverLetterSuggestions, ResumeScore } from '../types';
+import { XMarkIcon, BriefcaseIcon, SparklesIcon, CheckBadgeIcon } from './icons/Icons';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 
 type Tone = 'Professional' | 'Creative' | 'Bold';
-
-interface ApplicationModalProps {
-    job: Job;
-    onClose: () => void;
-    onSubmit: (jobId: number) => void;
-}
 
 const RadioButtonGroup: React.FC<{
     items: string[];
@@ -43,6 +37,55 @@ const RadioButtonGroup: React.FC<{
     </div>
 );
 
+const ScoreDonut: React.FC<{ score: number }> = ({ score }) => {
+    const size = 80;
+    const strokeWidth = 8;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+
+    const scoreColor = score > 75 ? 'text-green-500' : score > 50 ? 'text-yellow-500' : 'text-red-500';
+
+    return (
+        <div className="relative" style={{ width: size, height: size }}>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                <circle
+                    className="text-gray-200 dark:text-gray-600"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+                <circle
+                    className={scoreColor}
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                    style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.1, 0.8, 0.2, 1)' }}
+                />
+            </svg>
+            <div className={`absolute inset-0 flex items-center justify-center font-bold text-xl ${scoreColor}`}>
+                {score}
+            </div>
+        </div>
+    );
+};
+
+
+interface ApplicationModalProps {
+    job: Job;
+    onClose: () => void;
+    onSubmit: (jobId: number) => void;
+}
 
 const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
@@ -58,6 +101,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose, onSub
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [optimizeError, setOptimizeError] = useState('');
     const [coverLetterSuggestions, setCoverLetterSuggestions] = useState<AICoverLetterSuggestions['suggestions'] | null>(null);
+    const [resumeScore, setResumeScore] = useState<ResumeScore | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analyzeError, setAnalyzeError] = useState('');
     
     const modalRef = useModalFocus(onClose, true);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -187,7 +233,71 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose, onSub
             setIsOptimizing(false);
         }
     };
+    
+     const handleAnalyzeResume = async () => {
+        if (!userProfile?.masterResume) {
+            setAnalyzeError("Please save your Master Resume in 'My Dashboard' to use this feature.");
+            return;
+        }
 
+        setIsAnalyzing(true);
+        setAnalyzeError('');
+        setResumeScore(null);
+        
+        const scoreSchema = {
+            type: Type.OBJECT,
+            properties: {
+                match_score: { 
+                    type: Type.INTEGER, 
+                    description: "An integer score from 0-100 representing how well the resume matches the job description." 
+                },
+                explanation: { 
+                    type: Type.STRING, 
+                    description: "A brief, 2-3 sentence explanation for the score, highlighting strengths and key missing qualifications."
+                }
+            },
+            required: ['match_score', 'explanation']
+        };
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const prompt = `
+                You are an AI resume evaluator. Compare the following resume to the job description and return a match score (0–100) with explanation.
+
+                Resume:
+                ${userProfile.masterResume}
+
+                Job Description:
+                ${job.title}
+                ${job.description}
+                ${job.qualifications || ''}
+
+                Instructions:
+                - Analyze for keyword match, relevant experience, education, and skills.
+                - Score based on alignment with job requirements.
+                - Return score and a brief explanation as a JSON object matching the schema.
+            `;
+            
+            const response: GenerateContentResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: scoreSchema,
+                }
+            });
+            
+            const text = response.text.trim();
+            const parsedJson: ResumeScore = JSON.parse(text);
+            setResumeScore(parsedJson);
+
+        } catch(e) {
+            console.error(e);
+            setAnalyzeError("Sorry, we couldn't analyze your resume at this time. Please try again.");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     return (
         <div 
@@ -242,45 +352,45 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({ job, onClose, onSub
 
                                 <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600/50 space-y-3">
                                     <div className="flex justify-between items-center">
-                                         <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">AI Optimization Options</h4>
-                                         <button 
+                                         <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">AI Application Tools</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button 
+                                            type="button" 
+                                            onClick={handleAnalyzeResume} 
+                                            disabled={isAnalyzing || !userProfile?.masterResume}
+                                            className="inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-wait"
+                                        >
+                                            <CheckBadgeIcon className="h-4 w-4" /> 
+                                            {isAnalyzing ? 'Analyzing...' : 'Analyze Resume Fit'}
+                                        </button>
+                                        <button 
                                             type="button" 
                                             onClick={handleOptimizeCoverLetter} 
-                                            disabled={isOptimizing}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-wait"
+                                            disabled={isOptimizing || !formData.coverLetter}
+                                            className="inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-wait"
                                         >
                                             <SparklesIcon className="h-4 w-4" /> 
-                                            {isOptimizing ? 'Optimizing...' : 'Optimize with AI'}
+                                            {isOptimizing ? 'Optimizing...' : 'Optimize Cover Letter'}
                                         </button>
                                     </div>
-                                    <div>
-                                        <label htmlFor="keyAchievements" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Key Achievements to Highlight (Optional)</label>
-                                        <textarea
-                                            id="keyAchievements"
-                                            rows={2}
-                                            value={keyAchievements}
-                                            onChange={(e) => setKeyAchievements(e.target.value)}
-                                            className="mt-1 block w-full text-xs rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                            placeholder="e.g., Increased sales by 30% in Q4 2023..."
-                                            disabled={isOptimizing}
-                                        />
+                                     <div aria-live="polite">
+                                        {analyzeError && <p className="text-xs text-red-500 dark:text-red-400">{analyzeError}</p>}
+                                        {resumeScore && (
+                                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-500/20 flex items-start gap-4">
+                                                <div className="flex-shrink-0">
+                                                    <ScoreDonut score={resumeScore.match_score} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="font-semibold text-blue-800 dark:text-blue-200">Resume Analysis</h5>
+                                                    <p className="text-xs text-blue-700 dark:text-blue-300/90">{resumeScore.explanation}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tone for Suggestions</label>
-                                        <RadioButtonGroup
-                                            items={['Professional', 'Creative', 'Bold']}
-                                            selectedItem={selectedTone}
-                                            onSelect={(item) => setSelectedTone(item as Tone)}
-                                            disabled={isOptimizing}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div aria-live="polite">
-                                    {optimizeError && <p className="text-sm text-red-500 dark:text-red-400">{optimizeError}</p>}
                                     {coverLetterSuggestions && (
-                                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-500/20">
-                                            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">AI Suggestions:</h4>
+                                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-500/20">
+                                            <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200">AI Cover Letter Suggestions:</h5>
                                             <ul className="mt-1 space-y-3">
                                                 {coverLetterSuggestions.map((suggestion, index) => (
                                                     <li key={index} className="text-xs text-blue-700 dark:text-blue-300/90 border-t border-blue-200 dark:border-blue-500/20 first:border-t-0 pt-2 first:pt-0">

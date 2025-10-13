@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { AICommand } from '../types';
 import { CommandLineIcon, MagnifyingGlassIcon } from './icons/Icons';
-import { View } from '../App';
+import { View } from '../types';
 import { JOB_CATEGORIES } from '../constants';
 
 interface CommandBarProps {

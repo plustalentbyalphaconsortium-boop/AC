@@ -408,7 +408,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const renderContent = () => {
         if (isLoading) {
             return (
-                 <ul className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                 <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {Array.from({ length: 6 }).map((_, i) => <li key={i}><JobCardSkeleton /></li>)}
                 </ul>
             );
@@ -416,7 +416,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
         if (error) {
             return (
-                <div role="alert" className="mt-16 text-center text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-6 rounded-lg">
+                <div role="alert" className="text-center text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-6 rounded-lg">
                     <h3 className="font-bold">An Error Occurred</h3>
                     <p>{error}</p>
                     <button onClick={fetchAndMergeJobs} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500">
@@ -429,11 +429,13 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
         return (
             <>
                 <h3 id="job-results-heading" className="sr-only">Job Search Results</h3>
-                <ul aria-labelledby="job-results-heading" className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <ul aria-labelledby="job-results-heading" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredJobs.length > 0 ? (
                         filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} />)
                     ) : (
-                        <p className="text-gray-500 dark:text-gray-400 col-span-full text-center">No jobs found matching your criteria.</p>
+                        <li className="text-gray-500 dark:text-gray-400 col-span-full text-center py-10">
+                            <p>No jobs found matching your criteria.</p>
+                        </li>
                     )}
                 </ul>
             </>
@@ -518,10 +520,17 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                     </div>
                 </div>
 
-                <div className="mt-4 text-center">
+                <div className="mt-12">
                     <div className="sr-only" aria-live="polite" aria-atomic="true">
                         {!isLoading && resultsText}
                     </div>
+                     {!isLoading && !error && (
+                        <div className="text-center mb-6">
+                            <p className="text-md font-medium text-gray-700 dark:text-gray-300" aria-hidden="true">
+                                {resultsText}
+                            </p>
+                        </div>
+                    )}
                     {renderContent()}
                 </div>
             </div>

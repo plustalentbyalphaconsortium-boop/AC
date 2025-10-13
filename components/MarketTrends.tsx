@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { MarketTrendAnalysis } from '../types';
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { MarketTrendAnalysis, GroundingChunk } from '../types';
 import { ChartBarIcon, TrendingUpIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, SparklesIcon, MapPinIcon } from './icons/Icons';
 
 const AnalysisCard: React.FC<{
@@ -94,6 +94,7 @@ const MarketTrends: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [lastAnalyzedQuery, setLastAnalyzedQuery] = useState('');
+    const [sources, setSources] = useState<GroundingChunk[] | null>(null);
     const resultsRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -101,49 +102,6 @@ const MarketTrends: React.FC = () => {
             resultsRef.current.focus();
         }
     }, [analysis]);
-
-    const analysisSchema = {
-        type: Type.OBJECT,
-        properties: {
-            demandOutlook: {
-                type: Type.STRING,
-                description: 'A brief, 2-3 sentence summary of the current job market demand for this role or industry. Mention if it\'s growing, stable, or declining.'
-            },
-            salaryInsights: {
-                type: Type.STRING,
-                description: 'A 2-3 sentence overview of the typical salary range (e.g., entry-level, senior). Provide a general range in USD, like "$60,000 - $90,000".'
-            },
-            keySkills: {
-                type: Type.ARRAY,
-                description: 'A list of the top 5-7 most in-demand skills. For each skill, provide a relative demand score from 1 to 100.',
-                items: { 
-                    type: Type.OBJECT,
-                    properties: {
-                        skill: { type: Type.STRING },
-                        demandScore: { type: Type.INTEGER }
-                    },
-                    required: ['skill', 'demandScore']
-                }
-            },
-            emergingTrends: {
-                type: Type.STRING,
-                description: 'A 2-3 sentence summary of new technologies, methodologies, or future trends affecting this field.'
-            },
-            geographicHotspots: {
-                type: Type.ARRAY,
-                description: 'A list of 3-5 cities or regions with the highest demand. For each location, provide a relative demand index from 1 to 100.',
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        location: { type: Type.STRING },
-                        demandIndex: { type: Type.INTEGER }
-                    },
-                    required: ['location', 'demandIndex']
-                }
-            }
-        },
-        required: ['demandOutlook', 'salaryInsights', 'keySkills', 'emergingTrends', 'geographicHotspots']
-    };
 
     const handleAnalyze = async () => {
         if (!query) {
@@ -153,42 +111,60 @@ const MarketTrends: React.FC = () => {
         setIsLoading(true);
         setError('');
         setAnalysis(null);
+        setSources(null);
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             const prompt = `
                 Act as a senior market research analyst for the recruitment industry.
                 Your task is to provide a comprehensive market trend analysis for the following job title or industry: "${query}".
+                Use Google Search to find the most up-to-date, real-world data.
 
                 Provide insights on the following five key areas:
                 1.  **Demand Outlook:** Is the demand for this role growing, stable, or declining?
-                2.  **Salary Insights:** What are the typical salary ranges for entry-level and senior positions in the US?
-                3.  **Key Skills in Demand:** What are the most crucial skills? For each, assign a relative "demandScore" from 1 to 100 representing its importance.
+                2.  **Salary Insights:** What are the typical salary ranges for entry-level and senior positions in the US? Provide a general range in USD, like "$60,000 - $90,000".
+                3.  **Key Skills in Demand:** What are the top 5-7 most crucial skills? For each, assign a relative "demandScore" from 1 to 100 representing its importance.
                 4.  **Emerging Trends:** What new technologies or trends are shaping this field?
-                5.  **Geographic Hotspots:** Which cities or regions have the highest demand? For each, assign a relative "demandIndex" from 1 to 100.
+                5.  **Geographic Hotspots:** Which 3-5 cities or regions have the highest demand? For each, assign a relative "demandIndex" from 1 to 100.
 
                 Please provide concise, data-driven summaries for each area. The analysis should be based on current market data.
-                Return the entire analysis as a single JSON object matching the provided schema.
+                Return the entire analysis as a single, valid JSON object in your text response. The JSON object must conform to this structure:
+                {
+                  "demandOutlook": "string",
+                  "salaryInsights": "string",
+                  "keySkills": [{ "skill": "string", "demandScore": number }],
+                  "emergingTrends": "string",
+                  "geographicHotspots": [{ "location": "string", "demandIndex": number }]
+                }
+                Do not include any other text or markdown formatting outside of the JSON object.
             `;
 
             const response: GenerateContentResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
-                    responseMimeType: 'application/json',
-                    responseSchema: analysisSchema,
+                    tools: [{googleSearch: {}}],
                 }
             });
+            
+            const groundingMetadata = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+            if (groundingMetadata) {
+                setSources(groundingMetadata as GroundingChunk[]);
+            }
 
             const text = response.text.trim();
-            if (text) {
+            // The model might wrap the JSON in markdown backticks, so we clean it up.
+            const cleanedText = text.replace(/^```json\s*|```$/g, '');
+
+            if (cleanedText) {
                 try {
-                    const parsedJson = JSON.parse(text);
+                    const parsedJson = JSON.parse(cleanedText);
                     setAnalysis(parsedJson);
                     setLastAnalyzedQuery(query);
                 } catch (jsonError) {
                     console.error("Failed to parse JSON response:", jsonError);
-                    setError("Received an invalid analysis format from the server. Please try again.");
+                    console.error("Raw response text:", text);
+                    setError("Received an invalid analysis format from the server. The AI may have provided a conversational response instead of data. Please try again with a more specific query.");
                 }
             } else {
                 setError('The AI could not generate an analysis. The response was empty.');
@@ -207,7 +183,7 @@ const MarketTrends: React.FC = () => {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Real-Time Market Trend Analysis</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Get AI-powered insights into job demand, salaries, and required skills for any industry.</p>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Get AI-powered insights into job demand, salaries, and required skills, grounded in real-time data from Google Search.</p>
                 </div>
 
                 <div className="mt-12 max-w-2xl mx-auto">
@@ -222,6 +198,7 @@ const MarketTrends: React.FC = () => {
                                 placeholder="e.g., 'Data Scientist'"
                                 className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                 disabled={isLoading}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                             />
                             <button
                                 onClick={handleAnalyze}
@@ -262,7 +239,7 @@ const MarketTrends: React.FC = () => {
                             ref={resultsRef}
                             tabIndex={-1}
                             aria-labelledby="analysis-results-heading"
-                            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 rounded-md"
+                            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 rounded-md animate-scale-in"
                         >
                             <h2 id="analysis-results-heading" className="sr-only">
                                 Market trend analysis for {lastAnalyzedQuery}
@@ -298,6 +275,32 @@ const MarketTrends: React.FC = () => {
                                     )}
                                 </AnalysisCard>
                             </div>
+
+                             {sources && sources.length > 0 && (
+                                <div className="mt-8 animate-scale-in">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Data Sources from Google Search
+                                    </h3>
+                                    <div className="bg-white dark:bg-gray-800/30 p-4 rounded-lg border border-gray-200 dark:border-blue-500/20">
+                                        <ul className="space-y-2 max-h-40 overflow-y-auto">
+                                            {sources.map((source, index) => (
+                                                <li key={index} className="truncate">
+                                                    <a 
+                                                        href={source.web.uri} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                        title={source.web.title || source.web.uri}
+                                                    >
+                                                    {index + 1}. {source.web.title || source.web.uri}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
                         </section>
                     ) : (
                          <div className="text-center text-gray-500 dark:text-gray-400 pt-8">

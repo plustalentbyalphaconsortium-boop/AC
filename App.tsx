@@ -1,39 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
-import Hero from './components/Hero';
 import JobSearch from './components/JobSearch';
-import Academy from './components/Academy';
-import HRServices from './components/HRServices';
 import Footer from './components/Footer';
 import AIResumeBuilder from './components/AIResumeBuilder';
-import MarketTrends from './components/MarketTrends';
 import InterviewPrep from './components/InterviewPrep';
-import Dashboard from './components/Dashboard';
-import SkillCoach from './components/SkillCoach';
-import VideoGenerator from './components/VideoGenerator';
 import CareerPath from './components/CareerPath';
-import PostJob from './components/PostJob';
-import CloudSync from './components/CloudSync';
 import CommandBar from './components/CommandBar';
-import { AICommand } from './types';
-import { SparklesIcon, ChartBarIcon, ChatBubbleOvalLeftEllipsisIcon, UserCircleIcon, CpuChipIcon, VideoCameraIcon, RocketLaunchIcon, CloudArrowUpIcon, MagnifyingGlassIcon, BookOpenIcon, HandshakeIcon } from './components/icons/Icons';
+import OrbitalNexus from './components/OrbitalNexus';
+import AIAssistant from './components/AIAssistant';
+// FIX: Import new components
+import Academy from './components/Academy';
+import CandidateSummarizer from './components/CandidateSummarizer';
+import PostJob from './components/PostJob';
+import { View, Feature, AICommand } from './types';
+// FIX: Import AcademicCapIcon
+import { SparklesIcon, ChatBubbleOvalLeftEllipsisIcon, RocketLaunchIcon, MagnifyingGlassIcon, MicrophoneIcon, AcademicCapIcon } from './components/icons/Icons';
 
-
-export enum View {
-  Home = 'Home',
-  Jobs = 'Jobs',
-  Academy = 'Academy',
-  Employers = 'Employers',
-  AIResume = 'AIResume',
-  MarketTrends = 'MarketTrends',
-  InterviewPrep = 'InterviewPrep',
-  Dashboard = 'Dashboard',
-  SkillCoach = 'SkillCoach',
-  VideoGenerator = 'VideoGenerator',
-  CareerPath = 'CareerPath',
-  PostJob = 'PostJob',
-  CloudSync = 'CloudSync',
-}
 
 interface JobSearchState {
     searchTerm: string;
@@ -44,6 +26,7 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>(View.Home);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const [initialJobSearchState, setInitialJobSearchState] = useState<JobSearchState | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -57,12 +40,24 @@ const App: React.FC = () => {
         window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+  
+  const handleSetView = (view: View) => {
+    if (activeView === View.Home) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setActiveView(view);
+            setIsTransitioning(false);
+        }, 400); // Match animation duration
+    } else {
+        setActiveView(view);
+    }
+  };
 
   const handleExecuteCommand = (command: AICommand) => {
     switch (command.action) {
       case 'NAVIGATE':
         if (command.params?.view && command.params.view in View) {
-            setActiveView(command.params.view as View);
+            handleSetView(command.params.view as View);
         }
         break;
       case 'SEARCH_JOBS':
@@ -70,130 +65,55 @@ const App: React.FC = () => {
             searchTerm: command.params?.searchTerm || '',
             category: command.params?.category || 'All',
         });
-        setActiveView(View.Jobs);
+        handleSetView(View.Jobs);
         break;
       // Add more cases for other actions here
     }
     setIsCommandBarOpen(false);
   };
+  
+  const features: Feature[] = [
+      { view: View.Jobs, title: 'Find a Job', description: 'Browse verified job listings and apply with your profile.', icon: MagnifyingGlassIcon },
+      { view: View.AIAssistant, title: 'AI Assistant', description: 'Have a real-time voice conversation with our career assistant.', icon: MicrophoneIcon },
+      { view: View.AIResume, title: 'AI Resume Builder', description: 'Craft a tailored, professional resume in seconds with our AI assistant.', icon: SparklesIcon },
+      { view: View.CareerPath, title: 'AI Career Path', description: 'Get a personalized career roadmap based on your goals and experience.', icon: RocketLaunchIcon },
+      { view: View.InterviewPrep, title: 'AI Interview Prep', description: 'Practice with tailored questions and get instant feedback on your answers.', icon: ChatBubbleOvalLeftEllipsisIcon },
+      // FIX: Add Academy to features
+      { view: View.Academy, title: 'Alpha Academy', description: 'Elevate your skills with our expert-designed courses.', icon: AcademicCapIcon },
+  ];
 
   const renderContent = () => {
     switch (activeView) {
       case View.Jobs:
         return <JobSearch initialSearchTerm={initialJobSearchState?.searchTerm} initialCategory={initialJobSearchState?.category} />;
-      case View.Academy:
-        return <Academy />;
-      case View.Employers:
-        return <HRServices setActiveView={setActiveView} />;
       case View.AIResume:
         return <AIResumeBuilder />;
-      case View.MarketTrends:
-        return <MarketTrends />;
       case View.InterviewPrep:
         return <InterviewPrep />;
-      case View.Dashboard:
-        return <Dashboard />;
-      case View.SkillCoach:
-        return <SkillCoach />;
-      case View.VideoGenerator:
-        return <VideoGenerator />;
       case View.CareerPath:
-        return <CareerPath setActiveView={setActiveView} />;
+        return <CareerPath setActiveView={handleSetView} />;
+      case View.AIAssistant:
+        return <AIAssistant />;
+      // FIX: Add cases for new views
+      case View.Academy:
+        return <Academy />;
       case View.PostJob:
-        return <PostJob setActiveView={setActiveView} />;
-      case View.CloudSync:
-        return <CloudSync />;
+        return <PostJob setActiveView={handleSetView} />;
+      case View.CandidateSummarizer:
+        return <CandidateSummarizer />;
       case View.Home:
       default:
         // Reset initial search state when returning home
         if (initialJobSearchState) setInitialJobSearchState(null);
-        return (
-          <>
-            <Hero setActiveView={setActiveView} />
-            <div id="features" className="py-16 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-12">Our Core Services</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <FeatureCard 
-                            title="My Dashboard"
-                            description="Manage your profile, master resume, and tracked applications."
-                            onClick={() => setActiveView(View.Dashboard)}
-                            icon={UserCircleIcon}
-                        />
-                         <FeatureCard 
-                            title="AI Resume Builder"
-                            description="Craft a tailored, professional resume in seconds with our AI assistant."
-                            onClick={() => setActiveView(View.AIResume)}
-                            icon={SparklesIcon}
-                        />
-                         <FeatureCard 
-                            title="AI Career Path"
-                            description="Get a personalized career roadmap based on your goals and experience."
-                            onClick={() => setActiveView(View.CareerPath)}
-                            icon={RocketLaunchIcon}
-                        />
-                        <FeatureCard
-                            title="Cloud Sync & Backup"
-                            description="Securely back up and restore your profile, tracked jobs, and alerts."
-                            onClick={() => setActiveView(View.CloudSync)}
-                            icon={CloudArrowUpIcon}
-                        />
-                         <FeatureCard 
-                            title="AI Interview Prep"
-                            description="Practice with tailored questions and get instant feedback on your answers."
-                            onClick={() => setActiveView(View.InterviewPrep)}
-                            icon={ChatBubbleOvalLeftEllipsisIcon}
-                        />
-                        <FeatureCard 
-                            title="AI Skill Coach"
-                            description="Get a personalized learning plan with course recommendations for any skill."
-                            onClick={() => setActiveView(View.SkillCoach)}
-                            icon={CpuChipIcon}
-                        />
-                         <FeatureCard 
-                            title="AI Video Generator"
-                            description="Bring your ideas to life by generating short video clips from text or an image."
-                            onClick={() => setActiveView(View.VideoGenerator)}
-                            icon={VideoCameraIcon}
-                        />
-                        <FeatureCard 
-                            title="Market Trend Analysis"
-                            description="Get real-time insights on job demand, salaries, and key skills."
-                            onClick={() => setActiveView(View.MarketTrends)}
-                            icon={ChartBarIcon}
-                        />
-                         <FeatureCard 
-                            title="Job Search & Application"
-                            description="Browse verified job listings and apply instantly with your profile."
-                            onClick={() => setActiveView(View.Jobs)}
-                            icon={MagnifyingGlassIcon}
-                        />
-                        <FeatureCard 
-                            title="Alpha Academy"
-                            description="Upskill with expert-designed courses and earn certifications."
-                            onClick={() => setActiveView(View.Academy)}
-                            icon={BookOpenIcon}
-                        />
-                        <FeatureCard 
-                            title="Recruitment & HR"
-                            description="Comprehensive HR solutions, from staffing to payroll for businesses."
-                            onClick={() => setActiveView(View.Employers)}
-                            icon={HandshakeIcon}
-                        />
-                    </div>
-                </div>
-            </div>
-          </>
-        );
+        return <OrbitalNexus features={features} setActiveView={handleSetView} />;
     }
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-[#1a2a1a] min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
-      <div className="absolute top-0 left-0 w-full h-full bg-grid-black/[0.05] dark:bg-grid-white/[0.05] -z-1"></div>
+    <div className="bg-gray-50 dark:bg-[#0c0a18] min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
       <Header 
         activeView={activeView} 
-        setActiveView={setActiveView} 
+        setActiveView={handleSetView} 
         onOpenCommandBar={() => setIsCommandBarOpen(true)}
       />
       {isCommandBarOpen && (
@@ -202,31 +122,12 @@ const App: React.FC = () => {
               onExecuteCommand={handleExecuteCommand}
           />
       )}
-      <main>{renderContent()}</main>
+      <main className={isTransitioning ? 'animate-zoom-out-view' : ''}>
+        {renderContent()}
+      </main>
       <Footer />
     </div>
   );
 };
-
-interface FeatureCardProps {
-    title: string;
-    description: string;
-    onClick: () => void;
-    icon?: React.ComponentType<{className?: string}>;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, onClick, icon: Icon }) => (
-    <button
-        className="bg-white dark:bg-gray-800/20 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 transform hover:-translate-y-1 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a2a1a]"
-        onClick={onClick}
-    >
-        <div className="flex items-center mb-3">
-             {Icon && <Icon className="h-6 w-6 mr-3 text-blue-500 dark:text-blue-400" aria-hidden="true" />}
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 flex-grow">{description}</p>
-    </button>
-);
-
 
 export default App;
