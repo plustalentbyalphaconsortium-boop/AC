@@ -17,6 +17,7 @@ export enum View {
   CloudSync = 'CloudSync',
   VibeCheck = 'VibeCheck',
   HRServices = 'HRServices',
+  VisaTrack = 'VisaTrack',
 }
 
 export interface Feature {
@@ -109,7 +110,6 @@ export interface ResumeScore {
     explanation: string;
 }
 
-// FIX: Added missing type definitions.
 export interface Course {
   id: number;
   title: string;
@@ -141,12 +141,12 @@ export interface GroundingChunk {
 }
 
 export interface LearningPlanData {
-    skillName?: string; // Added to track the skill subject
-    careerGoal?: string; // Added to track the context
+    skillName?: string;
+    careerGoal?: string;
     learningPath: {
         step: string;
         description: string;
-        isCompleted?: boolean; // Added for progress tracking
+        isCompleted?: boolean;
     }[];
     keyConcepts: string[];
     recommendedCourses: {
@@ -166,4 +166,15 @@ export interface TutorialStep {
     elementId: string;
     title: string;
     text: string;
+}
+
+export interface VisaRoadmapData {
+    country: string;
+    steps: {
+        title: string;
+        description: string;
+        documentsNeeded: string[];
+    }[];
+    culturalTips: string[];
+    interviewPrep: string[];
 }

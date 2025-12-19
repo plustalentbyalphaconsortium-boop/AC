@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alpha Consortium</title>
     <script>
-      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
       } else {
@@ -36,23 +35,17 @@
       .font-orbitron {
         font-family: 'Orbitron', sans-serif;
       }
-      /* Light Mode Neon */
+      /* Darker color for WCAG 2.1 Contrast Compliance (4.5:1) */
       .neon-text {
-        color: #1e3a8a; /* A dark blue for light mode */
-        text-shadow:
-          0 0 3px rgba(65, 105, 225, 0.4),
-          0 0 6px rgba(65, 105, 225, 0.3),
-          0 0 10px rgba(65, 105, 225, 0.2);
+        color: #1e3a8a;
+        text-shadow: 0 0 1px rgba(65, 105, 225, 0.2);
       }
-      /* Dark Mode Neon */
       .dark .neon-text {
         color: #fff;
         text-shadow:
           0 0 5px rgba(173, 216, 230, 0.9),
           0 0 10px rgba(173, 216, 230, 0.9),
-          0 0 20px rgba(65, 105, 225, 0.9),
-          0 0 30px rgba(65, 105, 225, 0.9),
-          0 0 40px rgba(65, 105, 225, 0.9);
+          0 0 20px rgba(65, 105, 225, 0.9);
       }
       .neon-border {
          border-color: #4169e1;
@@ -77,68 +70,20 @@
         animation: pulse-border 1.5s infinite;
       }
       @keyframes scale-in {
-        from {
-            opacity: 0;
-            transform: scale(0.5);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
       }
       .animate-scale-in {
           animation: scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
       }
-      @keyframes celebratory-bounce {
-        0%, 100% { transform: translateY(0) rotate(0); }
-        20% { transform: translateY(-10px) rotate(-5deg); }
-        40% { transform: translateY(0) rotate(5deg); }
-        60% { transform: translateY(-5px) rotate(-2deg); }
-        80% { transform: translateY(0) rotate(2deg); }
+      @media (prefers-reduced-motion: reduce) {
+        .animate-scale-in, .animate-pulse-border, .animate-zoom-out-view {
+          animation: none !important;
+          transition: none !important;
+        }
       }
-      .animate-celebratory-bounce {
-        animation: celebratory-bounce 0.8s ease-in-out;
-      }
-       @keyframes orbital-glow {
-        0%, 100% { box-shadow: 0 0 8px 2px rgba(65, 105, 225, 0.4); }
-        50% { box-shadow: 0 0 16px 4px rgba(65, 105, 225, 0.6); }
-      }
-      .animate-orbital-glow {
-        animation: orbital-glow 4s ease-in-out infinite;
-      }
-      @keyframes zoom-out-view {
-          from {
-              opacity: 1;
-              transform: scale(1);
-          }
-          to {
-              opacity: 0;
-              transform: scale(2);
-          }
-      }
-      .animate-zoom-out-view {
-          animation: zoom-out-view 0.4s cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
-      }
-      /* Hide scrollbar for Chrome, Safari and Opera */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      /* Hide scrollbar for IE, Edge and Firefox */
-      .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-      }
-      /* Marquee Animation */
-      @keyframes marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(-50%); }
-      }
-      .animate-marquee {
-        animation: marquee 60s linear infinite;
-      }
-      .hover\:pause:hover {
-        animation-play-state: paused;
-      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
   <script type="importmap">
 {

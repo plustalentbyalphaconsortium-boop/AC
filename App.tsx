@@ -19,6 +19,7 @@ import VideoGenerator from './components/VideoGenerator';
 import CloudSync from './components/CloudSync';
 import VibeCheck from './components/VibeCheck';
 import HRServices from './components/HRServices';
+import VisaTrack from './components/VisaTrack';
 import AITutorialAssistant from './components/AITutorialAssistant';
 import { View, Feature, AICommand, TutorialStep } from './types';
 import { 
@@ -33,7 +34,8 @@ import {
     CpuChipIcon,
     HeartIcon,
     VideoCameraIcon,
-    BriefcaseIcon
+    BriefcaseIcon,
+    MapPinIcon
 } from './components/icons/Icons';
 
 
@@ -44,7 +46,6 @@ interface JobSearchState {
 
 const tutorialElementMap: Partial<Record<View, string[]>> = {
   [View.AIResume]: ['resume-job-description', 'resume-experience', 'resume-generate-button'],
-  // FIX: Corrected the enum member from View.JobSearch to View.Jobs.
   [View.Jobs]: ['job-search-input', 'job-category-filter', 'job-status-filter', 'job-results-list'],
   [View.InterviewPrep]: ['prep-job-description', 'prep-experience', 'prep-generate-button'],
 };
@@ -75,7 +76,6 @@ const App: React.FC = () => {
   }, []);
   
   const handleSetView = (view: View) => {
-    // Prevent starting a new transition if one is already in progress
     if (isTransitioning) return;
 
     if (activeView !== view) {
@@ -83,12 +83,11 @@ const App: React.FC = () => {
         setTimeout(() => {
             setActiveView(view);
             setIsTransitioning(false);
-             // Automatically close tutorial when changing views
             if (isTutorialActive) {
                 setIsTutorialActive(false);
                 setTutorialSteps([]);
             }
-        }, 400); // Match animation duration
+        }, 400); 
     }
   };
 
@@ -125,18 +124,13 @@ const App: React.FC = () => {
 
         const prompt = `
             You are a helpful and friendly UI tour guide for a web application called Alpha Consortium.
-            Your task is to create a series of short, clear, step-by-step tutorial text snippets for a feature of the app. The number of steps you generate must exactly match the number of element IDs provided.
-
             The feature is: **${view}**
             Number of steps to generate: ${tutorialElementMap[view]!.length}
-
-            Generate a JSON array of tutorial steps. Each object should have:
-            - "title": A short title for the step (e.g., "Paste the Job Description").
-            - "text": A 1-2 sentence explanation for that step.
+            Generate a JSON array of tutorial steps.
         `;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -147,10 +141,6 @@ const App: React.FC = () => {
         const generatedSteps = JSON.parse(response.text.trim());
         const elementIds = tutorialElementMap[view]!;
 
-        if (generatedSteps.length !== elementIds.length) {
-            throw new Error("AI returned a mismatched number of tutorial steps.");
-        }
-
         const combinedSteps = generatedSteps.map((step: any, index: number) => ({
             ...step,
             elementId: elementIds[index],
@@ -160,7 +150,7 @@ const App: React.FC = () => {
 
     } catch (e) {
         console.error("Tutorial generation failed:", e);
-        setTutorialError("Sorry, the AI Guide couldn't create a tour right now. Please try again in a moment.");
+        setTutorialError("Sorry, the AI Guide couldn't create a tour right now.");
     } finally {
         setIsTutorialLoading(false);
     }
@@ -189,15 +179,16 @@ const App: React.FC = () => {
   
   const features: Feature[] = [
       { view: View.Jobs, title: 'Find a Job', description: 'Browse verified job listings and apply with your profile.', icon: MagnifyingGlassIcon },
+      { view: View.VisaTrack, title: 'Balkan Bridge', description: 'AI-powered visa and relocation tracking for international careers.', icon: MapPinIcon },
       { view: View.AIAssistant, title: 'AI Assistant', description: 'Have a real-time voice conversation with our career assistant.', icon: MicrophoneIcon },
-      { view: View.AIResume, title: 'AI Resume Builder', description: 'Craft a tailored, professional resume in seconds with our AI assistant.', icon: SparklesIcon },
-      { view: View.CareerPath, title: 'AI Career Path', description: 'Get a personalized career roadmap based on your goals and experience.', icon: RocketLaunchIcon },
-      { view: View.InterviewPrep, title: 'AI Interview Prep', description: 'Practice with tailored questions and get instant feedback on your answers.', icon: ChatBubbleOvalLeftEllipsisIcon },
+      { view: View.AIResume, title: 'AI Resume Builder', description: 'Craft a tailored, professional resume in seconds.', icon: SparklesIcon },
+      { view: View.CareerPath, title: 'AI Career Path', description: 'Get a personalized career roadmap based on your goals.', icon: RocketLaunchIcon },
+      { view: View.InterviewPrep, title: 'AI Interview Prep', description: 'Practice with tailored questions and get feedback.', icon: ChatBubbleOvalLeftEllipsisIcon },
       { view: View.Academy, title: 'Alpha Academy', description: 'Elevate your skills with our expert-designed courses.', icon: AcademicCapIcon },
-      { view: View.Dashboard, title: 'My Dashboard', description: 'Manage your profile, resume, and tracked applications.', icon: UserCircleIcon },
-      { view: View.MarketTrends, title: 'Market Trends', description: 'Analyze job demand, salaries, and required skills with AI.', icon: ChartBarIcon },
+      { view: View.Dashboard, title: 'My Dashboard', description: 'Manage your profile and tracked applications.', icon: UserCircleIcon },
+      { view: View.MarketTrends, title: 'Market Trends', description: 'Analyze job demand and salaries with AI.', icon: ChartBarIcon },
       { view: View.SkillCoach, title: 'AI Skill Coach', description: 'Get a personalized roadmap to master any new skill.', icon: CpuChipIcon },
-      { view: View.VibeCheck, title: 'Career Vibe Check', description: 'Discover jobs that match your personality and work style.', icon: HeartIcon },
+      { view: View.VibeCheck, title: 'Career Vibe Check', description: 'Discover jobs that match your personality.', icon: HeartIcon },
       { view: View.VideoGenerator, title: 'AI Video Generator', description: 'Create stunning short videos from text prompts.', icon: VideoCameraIcon },
       { view: View.HRServices, title: 'For Employers', description: 'Access our full suite of HR and recruitment solutions.', icon: BriefcaseIcon },
   ];
@@ -234,9 +225,10 @@ const App: React.FC = () => {
         return <VibeCheck />;
       case View.HRServices:
         return <HRServices setActiveView={handleSetView} />;
+      case View.VisaTrack:
+        return <VisaTrack />;
       case View.Hero:
       default:
-        // Reset initial search state when returning home
         if (initialJobSearchState) setInitialJobSearchState(null);
         return <Hero features={features} setActiveView={handleSetView} />;
     }

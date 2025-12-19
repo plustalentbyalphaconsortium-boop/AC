@@ -19,10 +19,6 @@ const AlphaLogo: React.FC = () => (
                 <path d="M35 60.625L70 121.25L105 60.625L70 0L35 60.625Z" className="fill-gray-600 dark:fill-gray-200"/>
                 <path d="M35 60.625L70 121.25L105 60.625L70 0L35 60.625Z" stroke="#4169E1" strokeWidth="2"/>
                 <path d="M35 60.625H105" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
-                <path d="M35 60.625L70 0" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
-                <path d="M105 60.625L70 0" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
-                <path d="M70 60.625L35 121.25" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
-                <path d="M70 60.625L105 121.25" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
             </g>
             <defs>
                 <filter id="filter0_d_101_2" x="-4" y="0" width="148" height="129.25" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
@@ -52,6 +48,7 @@ const NavItem: React.FC<{ title: string; view: View, activeView: View; onClick: 
              <button
                 onClick={onClick}
                 aria-pressed={active}
+                aria-current={active ? 'page' : undefined}
                 className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
                     active 
                     ? 'font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
@@ -68,6 +65,7 @@ const NavItem: React.FC<{ title: string; view: View, activeView: View; onClick: 
         <button
             onClick={onClick}
             aria-pressed={active}
+            aria-current={active ? 'page' : undefined}
             className={`px-3 py-2 rounded-md transition-all duration-300 w-full text-left ${
             isMobile ? 'text-lg' : 'text-sm'
             } ${
@@ -183,6 +181,12 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
       ],
       dropdowns: [
           {
+              title: 'Relocation',
+              items: [
+                { title: 'Balkan Bridge', view: View.VisaTrack },
+              ]
+          },
+          {
               title: 'AI Tools',
               items: [
                   { title: 'AI Assistant', view: View.AIAssistant },
@@ -224,7 +228,6 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
             <AlphaLogo />
           </button>
           
-          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center" aria-label="Main navigation">
             <div className="flex items-center space-x-1">
               {navStructure.links.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} />)}
@@ -256,30 +259,15 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
                 </kbd>
             </button>
             <ThemeToggle />
-            <button className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900">
-                Login / Sign Up
+            <button className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 transition-colors duration-300">
+                Login
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
-             <button
-                onClick={onStartTutorial}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Start AI Guide"
-            >
-                <QuestionMarkCircleIcon className="h-6 w-6" />
-            </button>
-            <button
-                onClick={onOpenCommandBar}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Open AI Command Bar"
-            >
-                <CommandLineIcon className="h-6 w-6" />
-            </button>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
             >
@@ -290,7 +278,6 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div id="mobile-menu" className="lg:hidden absolute top-20 left-0 w-full h-[calc(100vh-80px)] bg-white dark:bg-[#1a2a1a] z-40 overflow-y-auto">
           <div className="pt-2 pb-8 px-2 space-y-1">
@@ -301,17 +288,6 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
                   </MobileDropdown>
               ))}
               {navStructure.tailLinks.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} isMobile />)}
-
-             <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
-             <div className="flex items-center justify-between px-3">
-                 <span className="text-gray-600 dark:text-gray-300 text-lg">Switch Theme</span>
-                 <ThemeToggle />
-             </div>
-             <div className="px-3 pt-4">
-                 <button className="w-full px-4 py-3 text-lg font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700 transition-colors duration-300">
-                     Login / Sign Up
-                 </button>
-             </div>
           </div>
         </div>
       )}
