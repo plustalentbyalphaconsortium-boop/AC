@@ -15,9 +15,9 @@ const AlphaLogo: React.FC = () => (
         <svg width="40" height="35" viewBox="0 0 140 121" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g filter="url(#filter0_d_101_2)">
                 <path d="M70 0L0 121.25H140L70 0Z" className="fill-white dark:fill-[#1a2a1a]"/>
-                <path d="M70 0L35 60.625L0 121.25H35L70 60.625L105 121.25H140L105 60.625L70 0Z" stroke="#4169E1" strokeWidth="4"/>
+                <path d="M70 0L35 60.625L0 121.25H35L70 60.625L105 121.25H140L105 60.625L70 0Z" stroke="#ea580c" strokeWidth="4"/>
                 <path d="M35 60.625L70 121.25L105 60.625L70 0L35 60.625Z" className="fill-gray-600 dark:fill-gray-200"/>
-                <path d="M35 60.625L70 121.25L105 60.625L70 0L35 60.625Z" stroke="#4169E1" strokeWidth="2"/>
+                <path d="M35 60.625L70 121.25L105 60.625L70 0L35 60.625Z" stroke="#ea580c" strokeWidth="2"/>
                 <path d="M35 60.625H105" stroke="#374151" strokeWidth="1.5" strokeDasharray="4 4"/>
             </g>
             <defs>
@@ -28,7 +28,7 @@ const AlphaLogo: React.FC = () => (
                 <feOffset dy="4"/>
                 <feGaussianBlur stdDeviation="2"/>
                 <feComposite in2="hardAlpha" operator="out"/>
-                <feColorMatrix type="matrix" values="0 0 0 0 0.254902 0 0 0 0 0.411765 0 0 0 0 0.882353 0 0 0 0.7 0"/>
+                <feColorMatrix type="matrix" values="0 0 0 0 0.98 0 0 0 0 0.45 0 0 0 0 0.05 0 0 0 0.7 0"/>
                 <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_101_2"/>
                 <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_101_2" result="shape"/>
                 </filter>
@@ -221,7 +221,7 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#1a2a1a]/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700/50">
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0c0a09]/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <button onClick={() => handleNavClick(View.Hero)} aria-label="Alpha Consortium, go to homepage" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md p-1 -ml-1">

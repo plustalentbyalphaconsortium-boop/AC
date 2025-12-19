@@ -235,7 +235,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-[#0c0a18] min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
       <a 
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md shadow-lg"

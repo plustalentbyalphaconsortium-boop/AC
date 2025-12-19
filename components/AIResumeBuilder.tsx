@@ -285,7 +285,7 @@ const AIResumeBuilder: React.FC = () => {
                 1.  **Headline Suggestions:** Create an array of 3-4 compelling professional headline variations that summarize the candidate's expertise.
                 2.  **Summary:** Write a powerful summary that highlights the user's most relevant skills and experiences as they relate to the job description, weaving in key achievements.
                 3.  **Key Skills:** Generate a list of 8-10 key skills most relevant to the job.
-                4.  **Experience Highlights:** Rewrite up to 5 bullet points from the user's experience to align with the job description. Use the specified tone, incorporate achievements, and quantify results where possible.
+                4.  **Experience Highlights:** Rewrite up to 5 bullet points from the user's experience to align with the job description. Use the specified tone, incorporate achievements, and quantify results with numbers (e.g., 'Increased sales by 20%') where possible.
             `;
 
             const response: GenerateContentResponse = await ai.models.generateContent({
@@ -511,7 +511,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         y += doc.getTextDimensions(headline, { maxWidth: CONTENT_WIDTH }).h + 8;
 
         // --- Line Separator ---
-        doc.setDrawColor(50, 93, 168); // A nice blue
+        doc.setDrawColor(234, 88, 12); // A nice orange
         doc.setLineWidth(0.5);
         doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
         y += 10;
@@ -519,7 +519,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         // --- Summary Section ---
         doc.setFont(FONT, 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(50, 93, 168);
+        doc.setTextColor(234, 88, 12);
         doc.text('Professional Summary', MARGIN, y);
         y += 8;
 
@@ -535,7 +535,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         checkPageBreak(14); // for header
         doc.setFont(FONT, 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(50, 93, 168);
+        doc.setTextColor(234, 88, 12);
         doc.text('Key Skills', MARGIN, y);
         y += 8;
 
@@ -560,7 +560,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         checkPageBreak(14); // for header
         doc.setFont(FONT, 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(50, 93, 168);
+        doc.setTextColor(234, 88, 12);
         doc.text('Experience Highlights', MARGIN, y);
         y += 8;
         
