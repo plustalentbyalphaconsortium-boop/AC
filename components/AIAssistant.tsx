@@ -51,11 +51,11 @@ function createBlob(data: Float32Array): Blob {
   }
   return {
     data: encode(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
+    mimeType: STRINGS.AUDIO_MIME_TYPE,
   };
 }
 
-type Tone = 'Friendly' | 'Professional' | 'Creative' | 'Bold';
+type Tone = typeof STRINGS.TONE_FRIENDLY | typeof STRINGS.TONE_PROFESSIONAL | typeof STRINGS.TONE_CREATIVE | typeof STRINGS.TONE_BOLD;
 
 // --- Main Component ---
 const AIAssistant: React.FC = () => {
@@ -66,7 +66,7 @@ const AIAssistant: React.FC = () => {
     const [currentOutput, setCurrentOutput] = useState('');
     const [error, setError] = useState('');
 
-    const [selectedTone, setSelectedTone] = useState<Tone>('Friendly');
+    const [selectedTone, setSelectedTone] = useState<Tone>(STRINGS.TONE_FRIENDLY);
     const [customInstruction, setCustomInstruction] = useState('');
 
     const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
@@ -122,16 +122,16 @@ const AIAssistant: React.FC = () => {
             let systemInstruction = STRINGS.SYSTEM_INSTRUCTION_BASE;
 
             switch (selectedTone) {
-                case 'Professional':
+                case STRINGS.TONE_PROFESSIONAL:
                     systemInstruction += STRINGS.SYSTEM_INSTRUCTION_PROFESSIONAL;
                     break;
-                case 'Creative':
+                case STRINGS.TONE_CREATIVE:
                     systemInstruction += STRINGS.SYSTEM_INSTRUCTION_CREATIVE;
                     break;
-                case 'Bold':
+                case STRINGS.TONE_BOLD:
                     systemInstruction += STRINGS.SYSTEM_INSTRUCTION_BOLD;
                     break;
-                case 'Friendly':
+                case STRINGS.TONE_FRIENDLY:
                 default:
                     systemInstruction += STRINGS.SYSTEM_INSTRUCTION_FRIENDLY;
                     break;
@@ -142,7 +142,7 @@ const AIAssistant: React.FC = () => {
             }
 
             const sessionPromise = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+                model: STRINGS.GEMINI_MODEL_ID,
                 callbacks: {
                     onopen: () => {
                         setConnectionState('connected');
@@ -179,8 +179,8 @@ const AIAssistant: React.FC = () => {
                             const fullOutput = currentOutputRef.current;
                              setTranscriptionHistory(prev => [
                                 ...prev,
-                                { speaker: 'user', text: fullInput },
-                                { speaker: 'model', text: fullOutput }
+                                { speaker: STRINGS.SPEAKER_USER, text: fullInput },
+                                { speaker: STRINGS.SPEAKER_MODEL, text: fullOutput }
                             ]);
                             currentInputRef.current = '';
                             currentOutputRef.current = '';
@@ -213,7 +213,7 @@ const AIAssistant: React.FC = () => {
                         }
                     },
                     onerror: (e: ErrorEvent) => {
-                        console.error('Session error:', e);
+                        console.error(STRINGS.LOG_SESSION_ERROR, e);
                         setError(STRINGS.ERROR_CONNECTION);
                         setConnectionState('error');
                         cleanup();
@@ -264,7 +264,7 @@ const AIAssistant: React.FC = () => {
                                     {STRINGS.RESPONSE_TONE_LABEL}
                                 </label>
                                 <div role="radiogroup" className="flex flex-wrap gap-2">
-                                    {(['Friendly', 'Professional', 'Creative', 'Bold'] as Tone[]).map(tone => (
+                                    {([STRINGS.TONE_FRIENDLY, STRINGS.TONE_PROFESSIONAL, STRINGS.TONE_CREATIVE, STRINGS.TONE_BOLD] as Tone[]).map(tone => (
                                         <button
                                             key={tone}
                                             type="button"
@@ -306,8 +306,8 @@ const AIAssistant: React.FC = () => {
                         className="h-96 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-4"
                     >
                         {transcriptionHistory.map((turn, index) => (
-                            <div key={index} className={`flex ${turn.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-md p-3 rounded-lg ${turn.speaker === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                            <div key={index} className={`flex ${turn.speaker === STRINGS.SPEAKER_USER ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-md p-3 rounded-lg ${turn.speaker === STRINGS.SPEAKER_USER ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                                     <p>{turn.text}</p>
                                 </div>
                             </div>
