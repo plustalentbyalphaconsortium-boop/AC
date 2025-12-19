@@ -25,5 +25,8 @@ export const STRINGS = {
     TONE_FRIENDLY: 'Friendly',
     TONE_PROFESSIONAL: 'Professional',
     TONE_CREATIVE: 'Creative',
-    TONE_BOLD: 'Bold'
+    TONE_BOLD: 'Bold',
+    
+    SPEAKER_USER: 'user',
+    SPEAKER_MODEL: 'model'
 } as const;
