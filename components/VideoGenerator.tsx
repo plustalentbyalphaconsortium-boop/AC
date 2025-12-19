@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { VideoCameraIcon, SparklesIcon, XMarkIcon } from './icons/Icons';
 
@@ -21,6 +21,22 @@ const VideoGenerator: React.FC = () => {
     const [error, setError] = useState('');
     const [lastUsedPrompt, setLastUsedPrompt] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isKeySelected, setIsKeySelected] = useState(false);
+
+    useEffect(() => {
+        const checkKey = async () => {
+            if (await window.aistudio.hasSelectedApiKey()) {
+                setIsKeySelected(true);
+            }
+        };
+        checkKey();
+    }, []);
+
+    const handleSelectKey = async () => {
+        await window.aistudio.openSelectKey();
+        // Assume key selection is successful to avoid race conditions.
+        setIsKeySelected(true);
+    };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -62,7 +78,7 @@ const VideoGenerator: React.FC = () => {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
             const requestPayload: any = {
-                model: 'veo-2.0-generate-001',
+                model: 'veo-3.1-fast-generate-preview',
                 prompt: prompt,
                 config: { numberOfVideos: 1 }
             };
@@ -97,7 +113,12 @@ const VideoGenerator: React.FC = () => {
 
         } catch (e: any) {
             console.error(e);
-            setError(`An error occurred during video generation: ${e.message}. Please check your API key and try again.`);
+            if (e.message?.includes("Requested entity was not found.")) {
+                setError("Your API key is invalid. Please select a valid key and try again.");
+                setIsKeySelected(false);
+            } else {
+                setError(`An error occurred during video generation: ${e.message}. Please check your API key and try again.`);
+            }
         } finally {
             setIsLoading(false);
             clearInterval(messageInterval);
@@ -113,6 +134,29 @@ const VideoGenerator: React.FC = () => {
         }
     };
 
+
+    if (!isKeySelected) {
+        return (
+            <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
+                <div className="max-w-xl mx-auto text-center bg-white dark:bg-gray-800/30 backdrop-blur-sm p-8 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-lg">
+                    <VideoCameraIcon className="h-12 w-12 mx-auto text-blue-500" />
+                    <h2 className="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl font-orbitron">API Key Required</h2>
+                    <p className="mt-4 text-gray-600 dark:text-gray-300">
+                        To use the AI Video Generator, you need to select an API key. This feature may incur costs based on usage.
+                        Please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">billing documentation</a> for more details.
+                    </p>
+                    <div className="mt-6">
+                        <button
+                            onClick={handleSelectKey}
+                            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500"
+                        >
+                            Select API Key
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">

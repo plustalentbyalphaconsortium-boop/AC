@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon, DocumentArrowDownIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
-import { AIResumeData } from '../types';
+import { AIResumeData, UserProfile } from '../types';
 
 declare const jspdf: any;
 
@@ -10,12 +10,22 @@ type Template = 'Modern' | 'Classic' | 'Compact';
 type Tone = 'Professional' | 'Creative' | 'Bold';
 type ActiveTool = 'resume' | 'coverLetter';
 
-const ResumePreview: React.FC<{
+interface ResumePreviewProps {
     data: AIResumeData;
     template: Template;
     onRegenerateSkills: () => void;
     isRegeneratingSkills: boolean;
-}> = ({ data, template, onRegenerateSkills, isRegeneratingSkills }) => {
+    onHeadlineChange: (newHeadline: string) => void;
+}
+
+const ResumePreview: React.FC<ResumePreviewProps> = ({ data, template, onRegenerateSkills, isRegeneratingSkills, onHeadlineChange }) => {
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Reset suggestions view when data changes
+    useEffect(() => {
+        setShowSuggestions(false);
+    }, [data.headlineSuggestions]);
+
     // Define base styles (which are the 'Modern' styles)
     const baseClasses = {
         container: 'p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 rounded-md shadow-inner font-sans text-sm',
@@ -49,7 +59,37 @@ const ResumePreview: React.FC<{
 
     return (
         <div className={templateClasses.container}>
-            <h2 className={templateClasses.headline}>{data.headline}</h2>
+            <div className="text-center mb-1">
+                <h2 className={templateClasses.headline}>{data.headline}</h2>
+                 {data.headlineSuggestions && data.headlineSuggestions.length > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => setShowSuggestions(prev => !prev)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                        aria-expanded={showSuggestions}
+                    >
+                        {showSuggestions ? 'Hide' : 'Change'} Headline
+                    </button>
+                )}
+            </div>
+             {showSuggestions && (
+                <div className="flex flex-wrap gap-2 justify-center my-3 animate-scale-in">
+                    {data.headlineSuggestions.map((suggestion, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => onHeadlineChange(suggestion)}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors duration-200 border ${
+                                data.headline === suggestion
+                                ? 'bg-blue-600 text-white font-semibold border-blue-600'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-800 border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
+                            }`}
+                        >
+                            {suggestion}
+                        </button>
+                    ))}
+                </div>
+            )}
             <hr className={templateClasses.hr} />
             
             <section>
@@ -111,6 +151,7 @@ const AIResumeBuilder: React.FC = () => {
     const [selectedTemplate, setSelectedTemplate] = useState<Template>('Modern');
     const [selectedTone, setSelectedTone] = useState<Tone>('Professional');
     const [activeTool, setActiveTool] = useState<ActiveTool>('resume');
+    const [infoMessage, setInfoMessage] = useState('');
 
     // Resume-specific state
     const [generatedResume, setGeneratedResume] = useState<AIResumeData | null>(null);
@@ -137,6 +178,19 @@ const AIResumeBuilder: React.FC = () => {
 
     useEffect(() => {
         jobDescriptionRef.current?.focus();
+         try {
+            const savedProfile = localStorage.getItem('userProfile');
+            if (savedProfile) {
+                const profile: UserProfile = JSON.parse(savedProfile);
+                if (profile.masterResume) {
+                    setUserExperience(profile.masterResume);
+                    setInfoMessage('Master resume loaded from your profile.');
+                    setTimeout(() => setInfoMessage(''), 3000);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load user profile", error);
+        }
     }, []);
     
      const handleMainAction = () => {
@@ -173,9 +227,10 @@ const AIResumeBuilder: React.FC = () => {
     const resumeSchema = {
       type: Type.OBJECT,
       properties: {
-        headline: {
-          type: Type.STRING,
-          description: 'A compelling professional headline or title for the resume (e.g., "Senior Product Manager | Agile & SaaS Expert").'
+        headlineSuggestions: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: 'An array of 3 to 4 compelling professional headline variations for the resume (e.g., ["Senior Product Manager | Agile & SaaS Expert", "Product Leader in SaaS"]).'
         },
         summary: {
           type: Type.STRING,
@@ -192,7 +247,7 @@ const AIResumeBuilder: React.FC = () => {
           description: 'Up to 5 rewritten, achievement-oriented bullet points from the user\'s experience.'
         },
       },
-      required: ['headline', 'summary', 'keySkills', 'experienceHighlights']
+      required: ['headlineSuggestions', 'summary', 'keySkills', 'experienceHighlights']
     };
 
     const handleGenerateResume = async () => {
@@ -227,7 +282,7 @@ const AIResumeBuilder: React.FC = () => {
                 ${keyAchievements ? `**User's Key Achievements (Incorporate these prominently):**\n${keyAchievements}` : ''}
 
                 **Instructions:**
-                1.  **Headline:** Create a compelling professional headline that summarizes the candidate's expertise.
+                1.  **Headline Suggestions:** Create an array of 3-4 compelling professional headline variations that summarize the candidate's expertise.
                 2.  **Summary:** Write a powerful summary that highlights the user's most relevant skills and experiences as they relate to the job description, weaving in key achievements.
                 3.  **Key Skills:** Generate a list of 8-10 key skills most relevant to the job.
                 4.  **Experience Highlights:** Rewrite up to 5 bullet points from the user's experience to align with the job description. Use the specified tone, incorporate achievements, and quantify results where possible.
@@ -246,7 +301,28 @@ const AIResumeBuilder: React.FC = () => {
 
             if (text) {
                 const parsedJson = JSON.parse(text);
-                setGeneratedResume(parsedJson);
+                if (parsedJson.headlineSuggestions && parsedJson.headlineSuggestions.length > 0) {
+                    const generatedData = {
+                        ...parsedJson,
+                        headline: parsedJson.headlineSuggestions[0],
+                    };
+                    setGeneratedResume(generatedData);
+
+                    // Save the generated resume to the user's profile
+                    try {
+                        const savedProfileJSON = localStorage.getItem('userProfile');
+                        const profile: UserProfile = savedProfileJSON ? JSON.parse(savedProfileJSON) : { name: '', email: '', masterResume: '' };
+                        
+                        profile.masterResume = userExperience; 
+                        profile.lastAIResume = generatedData;
+                        
+                        localStorage.setItem('userProfile', JSON.stringify(profile));
+                    } catch (e) {
+                        console.error("Failed to save generated resume to profile", e);
+                    }
+                } else {
+                    setError('The AI returned an invalid headline format. Please try again.');
+                }
             } else {
                 setError('The AI could not generate a resume. Please try again.');
             }
@@ -370,6 +446,13 @@ const AIResumeBuilder: React.FC = () => {
         } finally {
             setIsRegeneratingSkills(false);
         }
+    };
+
+    const handleHeadlineChange = (newHeadline: string) => {
+        setGeneratedResume(prev => {
+            if (!prev) return null;
+            return { ...prev, headline: newHeadline };
+        });
     };
 
     const handleCopyResume = () => {
@@ -531,7 +614,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
         // Resume and Cover Letter Inputs
         return (
             <div className="space-y-6">
-                <div>
+                <div data-tutorial-id="resume-job-description">
                     <label htmlFor="job-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         1. Paste Job Description
                     </label>
@@ -546,7 +629,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                         disabled={isLoading || isParsingFile}
                     />
                 </div>
-                <div>
+                <div data-tutorial-id="resume-experience">
                      <label htmlFor="user-experience" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         2. Upload or Paste Your Experience
                     </label>
@@ -580,6 +663,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                         onChange={(e) => setUserExperience(e.target.value)}
                         disabled={isLoading || isParsingFile}
                     />
+                    {infoMessage && <p className="text-sm text-green-600 dark:text-green-400 mt-2">{infoMessage}</p>}
                 </div>
                  <div>
                      <label htmlFor="key-achievements" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -681,6 +765,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                                         template={selectedTemplate} 
                                         onRegenerateSkills={handleRegenerateSkills}
                                         isRegeneratingSkills={isRegeneratingSkills}
+                                        onHeadlineChange={handleHeadlineChange}
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center h-full select-none p-4">
@@ -712,7 +797,7 @@ ${experienceHighlights.map(h => `• ${h}`).join('\n')}
                     </div>
                 </div>
 
-                <div className="mt-8 text-center">
+                <div data-tutorial-id="resume-generate-button" className="mt-8 text-center">
                     <button
                         onClick={handleMainAction}
                         disabled={isLoading || isParsingFile || !jobDescription || !userExperience}

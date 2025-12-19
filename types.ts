@@ -1,7 +1,7 @@
 import React from 'react';
 
 export enum View {
-  Home = 'Home',
+  Hero = 'Hero',
   Jobs = 'Jobs',
   AIResume = 'AIResume',
   InterviewPrep = 'InterviewPrep',
@@ -10,6 +10,13 @@ export enum View {
   Academy = 'Academy',
   PostJob = 'PostJob',
   CandidateSummarizer = 'CandidateSummarizer',
+  Dashboard = 'Dashboard',
+  MarketTrends = 'MarketTrends',
+  SkillCoach = 'SkillCoach',
+  VideoGenerator = 'VideoGenerator',
+  CloudSync = 'CloudSync',
+  VibeCheck = 'VibeCheck',
+  HRServices = 'HRServices',
 }
 
 export interface Feature {
@@ -54,10 +61,12 @@ export interface UserProfile {
     name: string;
     email: string;
     masterResume: string;
+    lastAIResume?: AIResumeData;
 }
 
 export interface AIResumeData {
     headline: string;
+    headlineSuggestions: string[];
     summary: string;
     keySkills: string[];
     experienceHighlights: string[];
@@ -82,7 +91,7 @@ export interface CareerPathData {
 }
 
 export type AICommand = {
-  action: 'NAVIGATE' | 'SEARCH_JOBS';
+  action: 'NAVIGATE' | 'SEARCH_JOBS' | 'TUTORIAL';
   params?: {
     view?: string; // Should match a View enum key
     searchTerm?: string;
@@ -132,9 +141,12 @@ export interface GroundingChunk {
 }
 
 export interface LearningPlanData {
+    skillName?: string; // Added to track the skill subject
+    careerGoal?: string; // Added to track the context
     learningPath: {
         step: string;
         description: string;
+        isCompleted?: boolean; // Added for progress tracking
     }[];
     keyConcepts: string[];
     recommendedCourses: {
@@ -148,4 +160,10 @@ export interface VibeJobAnalysis {
     poeticSummary: string;
     resonanceScore: number;
     resonanceReport: string;
+}
+
+export interface TutorialStep {
+    elementId: string;
+    title: string;
+    text: string;
 }

@@ -314,7 +314,7 @@ const InterviewPrep: React.FC = () => {
 
                 {!generatedData && !isGenerating ? (
                     <div className="mt-12 space-y-6">
-                         <div>
+                         <div data-tutorial-id="prep-job-description">
                             <label htmlFor="job-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 1. Paste Job Description
                             </label>
@@ -328,7 +328,7 @@ const InterviewPrep: React.FC = () => {
                                 onChange={(e) => setJobDescription(e.target.value)}
                             />
                         </div>
-                        <div>
+                        <div data-tutorial-id="prep-experience">
                              <label htmlFor="user-experience" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 2. Upload or Paste Your Resume/Experience
                             </label>
@@ -351,7 +351,7 @@ const InterviewPrep: React.FC = () => {
                                 onChange={(e) => setUserExperience(e.target.value)}
                             />
                         </div>
-                        <div className="text-center pt-4">
+                        <div data-tutorial-id="prep-generate-button" className="text-center pt-4">
                             <button
                                 onClick={handleGenerateQuestions}
                                 disabled={isGenerating || isParsingFile || !jobDescription || !userExperience}

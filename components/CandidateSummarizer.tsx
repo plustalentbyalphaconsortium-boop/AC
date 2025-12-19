@@ -1,17 +1,79 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { SparklesIcon, DocumentTextIcon } from './icons/Icons';
+import { SparklesIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon } from './icons/Icons';
+import { parseFile } from '../utils/fileParser';
 
 const CandidateSummarizer: React.FC = () => {
     const [resumeText, setResumeText] = useState('');
     const [summary, setSummary] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const [isParsingFile, setIsParsingFile] = useState(false);
+    const [fileError, setFileError] = useState('');
+    const [fileName, setFileName] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
+
     const resumeInputRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        resumeInputRef.current?.focus();
-    }, []);
+        if (!fileName && !resumeText) {
+            resumeInputRef.current?.focus();
+        }
+    }, [fileName, resumeText]);
+
+    const processFile = async (file: File) => {
+        if (!file) return;
+
+        if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+            setFileError('Unsupported file type. Please upload a .docx or .pdf file.');
+            return;
+        }
+
+        setIsParsingFile(true);
+        setFileError('');
+        setFileName(file.name);
+        setResumeText('');
+        setSummary('');
+        setError('');
+
+        try {
+            const text = await parseFile(file);
+            setResumeText(text);
+        } catch (err: any) {
+            setFileError(err.toString());
+        } finally {
+            setIsParsingFile(false);
+        }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+        if (event.target) event.target.value = ''; // Reset file input
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => { e.preventDefault(); setIsDragging(false); };
+    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+    };
+
+    const handleClearFile = () => {
+        setFileName('');
+        setResumeText('');
+        setFileError('');
+        if(fileInputRef.current) fileInputRef.current.value = '';
+    };
+
 
     const handleGenerateSummary = async () => {
         if (!resumeText.trim()) {
@@ -53,6 +115,9 @@ const CandidateSummarizer: React.FC = () => {
             setIsLoading(false);
         }
     };
+    
+    const isBusy = isParsingFile || isLoading;
+    const loaderText = isParsingFile ? 'Parsing Document...' : 'Generating Summary...';
 
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
@@ -64,35 +129,81 @@ const CandidateSummarizer: React.FC = () => {
 
                 <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     {/* Input Section */}
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                          <div>
-                            <label htmlFor="resume-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Paste Candidate's Resume
+                            <label htmlFor="resume-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                1. Upload or Paste a Resume
                             </label>
+                            <input
+                                type="file"
+                                id="resume-upload"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                onChange={handleFileChange}
+                                disabled={isBusy}
+                            />
+                            {fileName && !isParsingFile ? (
+                                <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-300 dark:border-gray-600">
+                                    <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 overflow-hidden">
+                                        <DocumentTextIcon className="h-5 w-5 flex-shrink-0" />
+                                        <span className="font-medium truncate" title={fileName}>{fileName}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleClearFile}
+                                        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 flex-shrink-0"
+                                        aria-label="Clear file"
+                                    >
+                                        <XMarkIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label
+                                    htmlFor="resume-upload"
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    className={`cursor-pointer w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex flex-col items-center justify-center
+                                    ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                >
+                                    <CloudArrowUpIcon className="h-8 w-8 mx-auto mb-2" />
+                                    <span className="text-sm">Drag & drop a file or <span className="text-blue-600 dark:text-blue-400 font-semibold">click to upload</span></span>
+                                    <span className="text-xs mt-1 text-gray-400 dark:text-gray-500">.docx or .pdf supported</span>
+                                </label>
+                            )}
+                            <div className="mt-2 text-center" aria-live="polite">
+                                {fileError && <p role="alert" className="text-red-500 dark:text-red-400 text-sm">{fileError}</p>}
+                            </div>
+                        </div>
+                        <div>
                             <textarea
                                 id="resume-text"
                                 ref={resumeInputRef}
-                                rows={15}
+                                rows={10}
                                 className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                placeholder="Paste the full resume text here..."
+                                placeholder="...or paste the resume text here."
                                 value={resumeText}
-                                onChange={(e) => setResumeText(e.target.value)}
-                                disabled={isLoading}
+                                onChange={(e) => {
+                                    setResumeText(e.target.value);
+                                    if(fileName) handleClearFile();
+                                }}
+                                disabled={isBusy}
                             />
                         </div>
                         <div className="pt-2">
                             <button
                                 onClick={handleGenerateSummary}
-                                disabled={isLoading || !resumeText}
+                                disabled={isBusy || !resumeText}
                                 className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
                             >
-                                {isLoading ? (
+                                {isBusy ? (
                                     <>
                                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        Generating Summary...
+                                        {loaderText}
                                     </>
                                 ) : (
                                     <>

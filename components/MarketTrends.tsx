@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { MarketTrendAnalysis, GroundingChunk } from '../types';
 import { ChartBarIcon, TrendingUpIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, SparklesIcon, MapPinIcon } from './icons/Icons';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 
 const AnalysisCard: React.FC<{
     icon: React.ComponentType<{ className?: string }>;
@@ -19,74 +20,45 @@ const AnalysisCard: React.FC<{
     </div>
 );
 
-const BarChart: React.FC<{ data: { name: string; value: number }[]; barColor: string }> = ({ data, barColor }) => {
-    const maxValue = Math.max(...data.map(d => d.value), 0);
-    const chartHeight = data.length * 36; // 36px per bar
-
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
     return (
-        <div className="w-full">
-            <svg
-                width="100%"
-                height={chartHeight}
-                viewBox={`0 0 300 ${chartHeight}`}
-                preserveAspectRatio="xMinYMin meet"
-                aria-label="Bar chart"
-                role="graphics-document"
-            >
-                <g>
-                    {data.map((d, i) => {
-                        const y = i * 36;
-                        const barWidth = maxValue > 0 ? (d.value / maxValue) * 200 : 0; // Bar area width is 200
-                        return (
-                            <g key={d.name} transform={`translate(0, ${y})`}>
-                                <title id={`bar-title-${i}`}>{`${d.name}: ${d.value}`}</title>
-                                <text
-                                    x="0"
-                                    y="16"
-                                    className="text-xs font-medium fill-current text-gray-700 dark:text-gray-300"
-                                    aria-labelledby={`bar-title-${i}`}
-                                >
-                                    {d.name}
-                                </text>
-                                <rect
-                                    x="0"
-                                    y="22"
-                                    height="8"
-                                    rx="4"
-                                    ry="4"
-                                    className="fill-current text-gray-200 dark:text-gray-700"
-                                    width="300"
-                                />
-                                <rect
-                                    x="0"
-                                    y="22"
-                                    height="8"
-                                    rx="4"
-                                    ry="4"
-                                    className={`fill-current ${barColor}`}
-                                    aria-labelledby={`bar-title-${i}`}
-                                >
-                                     <animate attributeName="width" from="0" to={barWidth + 100} dur="0.8s" fill="freeze" calcMode="spline" keySplines="0.1 0.8 0.2 1" />
-                                </rect>
-                                 <text
-                                    x={barWidth + 105}
-                                    y="16"
-                                    className="text-xs font-bold fill-current text-gray-800 dark:text-gray-200"
-                                    textAnchor="start"
-                                    aria-labelledby={`bar-title-${i}`}
-                                >
-                                    {d.value}
-                                     <animate attributeName="opacity" from="0" to="1" dur="0.8s" begin="0.5s" fill="freeze" />
-                                </text>
-                            </g>
-                        );
-                    })}
-                </g>
-            </svg>
-        </div>
+      <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg z-10">
+        <p className="font-bold text-gray-900 dark:text-white mb-1">{label}</p>
+        <p className="text-blue-600 dark:text-blue-400 font-semibold">
+            Score: {payload[0].value}
+        </p>
+      </div>
     );
+  }
+  return null;
 };
 
+const TrendBarChart: React.FC<{ data: { name: string; value: number }[]; color: string }> = ({ data, color }) => {
+    return (
+        <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#374151" opacity={0.1} />
+                    <XAxis type="number" hide />
+                    <YAxis 
+                        dataKey="name" 
+                        type="category" 
+                        width={100} 
+                        tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 500 }} 
+                        interval={0}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={1000}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
 
 const MarketTrends: React.FC = () => {
     const [query, setQuery] = useState('');
@@ -253,9 +225,9 @@ const MarketTrends: React.FC = () => {
                                 </AnalysisCard>
                                 <AnalysisCard icon={WrenchScrewdriverIcon} title="Key Skills in Demand">
                                     {analysis.keySkills && analysis.keySkills.length > 0 ? (
-                                        <BarChart 
+                                        <TrendBarChart 
                                             data={analysis.keySkills.map(s => ({ name: s.skill, value: s.demandScore }))} 
-                                            barColor="text-blue-500"
+                                            color="#3b82f6"
                                         />
                                     ) : (
                                         <p>No specific skills data available.</p>
@@ -266,9 +238,9 @@ const MarketTrends: React.FC = () => {
                                 </AnalysisCard>
                                 <AnalysisCard icon={MapPinIcon} title="Geographic Hotspots">
                                     {analysis.geographicHotspots && analysis.geographicHotspots.length > 0 ? (
-                                        <BarChart 
+                                        <TrendBarChart 
                                             data={analysis.geographicHotspots.map(h => ({ name: h.location, value: h.demandIndex }))}
-                                            barColor="text-green-500"
+                                            color="#10b981"
                                         />
                                     ) : (
                                         <p>No specific location data available.</p>

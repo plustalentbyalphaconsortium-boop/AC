@@ -1,20 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import Header from './components/Header';
+import Hero from './components/Hero';
 import JobSearch from './components/JobSearch';
 import Footer from './components/Footer';
 import AIResumeBuilder from './components/AIResumeBuilder';
 import InterviewPrep from './components/InterviewPrep';
 import CareerPath from './components/CareerPath';
 import CommandBar from './components/CommandBar';
-import OrbitalNexus from './components/OrbitalNexus';
 import AIAssistant from './components/AIAssistant';
-// FIX: Import new components
 import Academy from './components/Academy';
 import CandidateSummarizer from './components/CandidateSummarizer';
 import PostJob from './components/PostJob';
-import { View, Feature, AICommand } from './types';
-// FIX: Import AcademicCapIcon
-import { SparklesIcon, ChatBubbleOvalLeftEllipsisIcon, RocketLaunchIcon, MagnifyingGlassIcon, MicrophoneIcon, AcademicCapIcon } from './components/icons/Icons';
+import Dashboard from './components/Dashboard';
+import MarketTrends from './components/MarketTrends';
+import SkillCoach from './components/SkillCoach';
+import VideoGenerator from './components/VideoGenerator';
+import CloudSync from './components/CloudSync';
+import VibeCheck from './components/VibeCheck';
+import HRServices from './components/HRServices';
+import AITutorialAssistant from './components/AITutorialAssistant';
+import { View, Feature, AICommand, TutorialStep } from './types';
+import { 
+    SparklesIcon, 
+    ChatBubbleOvalLeftEllipsisIcon, 
+    RocketLaunchIcon, 
+    MagnifyingGlassIcon, 
+    MicrophoneIcon, 
+    AcademicCapIcon,
+    UserCircleIcon,
+    ChartBarIcon,
+    CpuChipIcon,
+    HeartIcon,
+    VideoCameraIcon,
+    BriefcaseIcon
+} from './components/icons/Icons';
 
 
 interface JobSearchState {
@@ -22,11 +42,24 @@ interface JobSearchState {
     category: string;
 }
 
+const tutorialElementMap: Partial<Record<View, string[]>> = {
+  [View.AIResume]: ['resume-job-description', 'resume-experience', 'resume-generate-button'],
+  // FIX: Corrected the enum member from View.JobSearch to View.Jobs.
+  [View.Jobs]: ['job-search-input', 'job-category-filter', 'job-status-filter', 'job-results-list'],
+  [View.InterviewPrep]: ['prep-job-description', 'prep-experience', 'prep-generate-button'],
+};
+
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<View>(View.Home);
+  const [activeView, setActiveView] = useState<View>(View.Hero);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const [initialJobSearchState, setInitialJobSearchState] = useState<JobSearchState | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // AI Tutorial State
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const [tutorialSteps, setTutorialSteps] = useState<TutorialStep[]>([]);
+  const [isTutorialLoading, setIsTutorialLoading] = useState(false);
+  const [tutorialError, setTutorialError] = useState('');
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -42,14 +75,94 @@ const App: React.FC = () => {
   }, []);
   
   const handleSetView = (view: View) => {
-    if (activeView === View.Home) {
+    // Prevent starting a new transition if one is already in progress
+    if (isTransitioning) return;
+
+    if (activeView !== view) {
         setIsTransitioning(true);
         setTimeout(() => {
             setActiveView(view);
             setIsTransitioning(false);
+             // Automatically close tutorial when changing views
+            if (isTutorialActive) {
+                setIsTutorialActive(false);
+                setTutorialSteps([]);
+            }
         }, 400); // Match animation duration
-    } else {
-        setActiveView(view);
+    }
+  };
+
+  const startTutorial = async (view: View) => {
+    if (!tutorialElementMap[view]) {
+        setTutorialError("Sorry, there's no tutorial available for this page yet.");
+        setTutorialSteps([{
+            elementId: 'body',
+            title: 'No Tutorial Available',
+            text: "Sorry, a guided tour isn't ready for this page yet. More are being added all the time!",
+        }]);
+        setIsTutorialActive(true);
+        return;
+    }
+
+    setIsTutorialLoading(true);
+    setIsTutorialActive(true);
+    setTutorialError('');
+    setTutorialSteps([]);
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+        const tutorialSchema = {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    text: { type: Type.STRING },
+                },
+                required: ['title', 'text']
+            }
+        };
+
+        const prompt = `
+            You are a helpful and friendly UI tour guide for a web application called Alpha Consortium.
+            Your task is to create a series of short, clear, step-by-step tutorial text snippets for a feature of the app. The number of steps you generate must exactly match the number of element IDs provided.
+
+            The feature is: **${view}**
+            Number of steps to generate: ${tutorialElementMap[view]!.length}
+
+            Generate a JSON array of tutorial steps. Each object should have:
+            - "title": A short title for the step (e.g., "Paste the Job Description").
+            - "text": A 1-2 sentence explanation for that step.
+        `;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: tutorialSchema,
+            }
+        });
+        
+        const generatedSteps = JSON.parse(response.text.trim());
+        const elementIds = tutorialElementMap[view]!;
+
+        if (generatedSteps.length !== elementIds.length) {
+            throw new Error("AI returned a mismatched number of tutorial steps.");
+        }
+
+        const combinedSteps = generatedSteps.map((step: any, index: number) => ({
+            ...step,
+            elementId: elementIds[index],
+        }));
+
+        setTutorialSteps(combinedSteps);
+
+    } catch (e) {
+        console.error("Tutorial generation failed:", e);
+        setTutorialError("Sorry, the AI Guide couldn't create a tour right now. Please try again in a moment.");
+    } finally {
+        setIsTutorialLoading(false);
     }
   };
 
@@ -67,7 +180,9 @@ const App: React.FC = () => {
         });
         handleSetView(View.Jobs);
         break;
-      // Add more cases for other actions here
+      case 'TUTORIAL':
+        startTutorial(activeView);
+        break;
     }
     setIsCommandBarOpen(false);
   };
@@ -78,8 +193,13 @@ const App: React.FC = () => {
       { view: View.AIResume, title: 'AI Resume Builder', description: 'Craft a tailored, professional resume in seconds with our AI assistant.', icon: SparklesIcon },
       { view: View.CareerPath, title: 'AI Career Path', description: 'Get a personalized career roadmap based on your goals and experience.', icon: RocketLaunchIcon },
       { view: View.InterviewPrep, title: 'AI Interview Prep', description: 'Practice with tailored questions and get instant feedback on your answers.', icon: ChatBubbleOvalLeftEllipsisIcon },
-      // FIX: Add Academy to features
       { view: View.Academy, title: 'Alpha Academy', description: 'Elevate your skills with our expert-designed courses.', icon: AcademicCapIcon },
+      { view: View.Dashboard, title: 'My Dashboard', description: 'Manage your profile, resume, and tracked applications.', icon: UserCircleIcon },
+      { view: View.MarketTrends, title: 'Market Trends', description: 'Analyze job demand, salaries, and required skills with AI.', icon: ChartBarIcon },
+      { view: View.SkillCoach, title: 'AI Skill Coach', description: 'Get a personalized roadmap to master any new skill.', icon: CpuChipIcon },
+      { view: View.VibeCheck, title: 'Career Vibe Check', description: 'Discover jobs that match your personality and work style.', icon: HeartIcon },
+      { view: View.VideoGenerator, title: 'AI Video Generator', description: 'Create stunning short videos from text prompts.', icon: VideoCameraIcon },
+      { view: View.HRServices, title: 'For Employers', description: 'Access our full suite of HR and recruitment solutions.', icon: BriefcaseIcon },
   ];
 
   const renderContent = () => {
@@ -94,27 +214,47 @@ const App: React.FC = () => {
         return <CareerPath setActiveView={handleSetView} />;
       case View.AIAssistant:
         return <AIAssistant />;
-      // FIX: Add cases for new views
       case View.Academy:
         return <Academy />;
       case View.PostJob:
         return <PostJob setActiveView={handleSetView} />;
       case View.CandidateSummarizer:
         return <CandidateSummarizer />;
-      case View.Home:
+      case View.Dashboard:
+        return <Dashboard setActiveView={handleSetView} />;
+      case View.MarketTrends:
+        return <MarketTrends />;
+      case View.SkillCoach:
+        return <SkillCoach setActiveView={handleSetView} />;
+      case View.VideoGenerator:
+        return <VideoGenerator />;
+      case View.CloudSync:
+        return <CloudSync />;
+      case View.VibeCheck:
+        return <VibeCheck />;
+      case View.HRServices:
+        return <HRServices setActiveView={handleSetView} />;
+      case View.Hero:
       default:
         // Reset initial search state when returning home
         if (initialJobSearchState) setInitialJobSearchState(null);
-        return <OrbitalNexus features={features} setActiveView={handleSetView} />;
+        return <Hero features={features} setActiveView={handleSetView} />;
     }
   };
 
   return (
     <div className="bg-gray-50 dark:bg-[#0c0a18] min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Header 
         activeView={activeView} 
         setActiveView={handleSetView} 
         onOpenCommandBar={() => setIsCommandBarOpen(true)}
+        onStartTutorial={() => startTutorial(activeView)}
       />
       {isCommandBarOpen && (
           <CommandBar 
@@ -122,7 +262,15 @@ const App: React.FC = () => {
               onExecuteCommand={handleExecuteCommand}
           />
       )}
-      <main className={isTransitioning ? 'animate-zoom-out-view' : ''}>
+       {isTutorialActive && (
+          <AITutorialAssistant
+            steps={tutorialSteps}
+            isLoading={isTutorialLoading}
+            error={tutorialError}
+            onClose={() => setIsTutorialActive(false)}
+          />
+        )}
+      <main id="main-content" className={isTransitioning ? 'animate-zoom-out-view' : 'animate-scale-in'} tabIndex={-1}>
         {renderContent()}
       </main>
       <Footer />

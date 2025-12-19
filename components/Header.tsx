@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { View } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
-import { SunIcon, MoonIcon, Bars3Icon, XMarkIcon, CommandLineIcon } from './icons/Icons';
+import { SunIcon, MoonIcon, Bars3Icon, XMarkIcon, CommandLineIcon, ChevronDownIcon, QuestionMarkCircleIcon } from './icons/Icons';
 
 interface HeaderProps {
   activeView: View;
   setActiveView: (view: View) => void;
   onOpenCommandBar: () => void;
+  onStartTutorial: () => void;
 }
 
 const AlphaLogo: React.FC = () => (
@@ -43,22 +44,95 @@ const AlphaLogo: React.FC = () => (
     </div>
 );
 
+const NavItem: React.FC<{ title: string; view: View, activeView: View; onClick: () => void; isMobile?: boolean; isDropdown?: boolean }> = ({ title, view, activeView, onClick, isMobile, isDropdown }) => {
+    const active = activeView === view;
 
-const NavItem: React.FC<{ title: string; active: boolean; onClick: () => void; isMobile?: boolean }> = ({ title, active, onClick, isMobile }) => (
-  <button
-    onClick={onClick}
-    aria-pressed={active}
-    className={`px-3 py-2 rounded-md transition-all duration-300 w-full text-left ${
-      isMobile ? 'text-lg' : 'text-sm'
-    } ${
-      active
-        ? 'font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-500/20 shadow-inner'
-        : 'font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-    }`}
-  >
-    {title}
-  </button>
-);
+    if (isDropdown) {
+        return (
+             <button
+                onClick={onClick}
+                aria-pressed={active}
+                className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                    active 
+                    ? 'font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                role="menuitem"
+            >
+                {title}
+            </button>
+        )
+    }
+
+    return (
+        <button
+            onClick={onClick}
+            aria-pressed={active}
+            className={`px-3 py-2 rounded-md transition-all duration-300 w-full text-left ${
+            isMobile ? 'text-lg' : 'text-sm'
+            } ${
+            active
+                ? 'font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-500/20 shadow-inner'
+                : 'font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
+            }`}
+        >
+            {title}
+        </button>
+    );
+};
+
+const NavDropdown: React.FC<{ title: string; children: ReactNode }> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const timeoutRef = useRef<number | null>(null);
+
+    const handleMouseEnter = () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        timeoutRef.current = window.setTimeout(() => {
+        setIsOpen(false);
+        }, 200);
+    };
+
+    return (
+        <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            <button
+                aria-haspopup="true"
+                aria-expanded={isOpen}
+                className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+                {title}
+                <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 origin-top rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-30 animate-scale-in">
+                <div className="py-1" role="menu" aria-orientation="vertical">
+                    {children}
+                </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const MobileDropdown: React.FC<{ title: string; children: ReactNode }> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border-b border-gray-200 dark:border-gray-700/50">
+            <button onClick={() => setIsOpen(!isOpen)} className="flex justify-between items-center w-full px-3 py-3 text-lg font-medium text-gray-600 dark:text-gray-300">
+                <span>{title}</span>
+                <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="pl-4 py-2 space-y-1">
+                    {children}
+                </div>
+            )}
+        </div>
+    )
+}
 
 const ThemeToggle: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
@@ -78,18 +152,7 @@ const ThemeToggle: React.FC = () => {
     );
 };
 
-const navItems: { view: View; title: string }[] = [
-    { view: View.Home, title: 'Home' },
-    { view: View.Jobs, title: 'Find a Job' },
-    { view: View.AIAssistant, title: 'AI Assistant' },
-    { view: View.AIResume, title: 'AI Resume' },
-    { view: View.CareerPath, title: 'Career Path' },
-    { view: View.InterviewPrep, title: 'Interview Prep' },
-    { view: View.Academy, title: 'Academy' },
-];
-
-
-const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenCommandBar }) => {
+const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenCommandBar, onStartTutorial }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMac, setIsMac] = useState(false);
 
@@ -112,30 +175,76 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
       document.body.style.overflow = 'auto';
     };
   }, [isMenuOpen]);
+  
+  const navStructure = {
+      links: [
+          { title: 'Home', view: View.Hero },
+          { title: 'Find a Job', view: View.Jobs },
+      ],
+      dropdowns: [
+          {
+              title: 'AI Tools',
+              items: [
+                  { title: 'AI Assistant', view: View.AIAssistant },
+                  { title: 'AI Resume Builder', view: View.AIResume },
+                  { title: 'AI Interview Prep', view: View.InterviewPrep },
+                  { title: 'AI Career Path', view: View.CareerPath },
+                  { title: 'AI Skill Coach', view: View.SkillCoach },
+                  { title: 'Career Vibe Check', view: View.VibeCheck },
+                  { title: 'AI Video Generator', view: View.VideoGenerator },
+              ]
+          },
+          {
+              title: 'For Employers',
+              items: [
+                  { title: 'HR Services', view: View.HRServices },
+                  { title: 'Post a Job', view: View.PostJob },
+                  { title: 'Candidate Summarizer', view: View.CandidateSummarizer },
+              ]
+          },
+          {
+              title: 'Resources',
+              items: [
+                  { title: 'Alpha Academy', view: View.Academy },
+                  { title: 'Market Trends', view: View.MarketTrends },
+                  { title: 'Cloud Sync', view: View.CloudSync },
+              ]
+          }
+      ],
+      tailLinks: [
+          { title: 'My Dashboard', view: View.Dashboard }
+      ]
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#1a2a1a]/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <button onClick={() => handleNavClick(View.Home)} aria-label="Alpha Consortium, go to homepage" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md p-1 -ml-1">
+          <button onClick={() => handleNavClick(View.Hero)} aria-label="Alpha Consortium, go to homepage" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md p-1 -ml-1">
             <AlphaLogo />
           </button>
           
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center" aria-label="Main navigation">
             <div className="flex items-center space-x-1">
-              {navItems.map((item) => (
-                <NavItem
-                  key={item.view}
-                  title={item.title}
-                  active={activeView === item.view}
-                  onClick={() => handleNavClick(item.view)}
-                />
+              {navStructure.links.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} />)}
+              {navStructure.dropdowns.map(dropdown => (
+                  <NavDropdown key={dropdown.title} title={dropdown.title}>
+                      {dropdown.items.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} isDropdown />)}
+                  </NavDropdown>
               ))}
+              {navStructure.tailLinks.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} />)}
             </div>
           </nav>
 
           <div className="hidden lg:flex items-center gap-2 ml-6">
+            <button
+                onClick={onStartTutorial}
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors duration-200"
+                aria-label="Start AI Guide"
+            >
+                <QuestionMarkCircleIcon className="h-5 w-5" />
+            </button>
             <button
                 onClick={onOpenCommandBar}
                 className="flex items-center gap-2 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-colors duration-200"
@@ -154,6 +263,13 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
+             <button
+                onClick={onStartTutorial}
+                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Start AI Guide"
+            >
+                <QuestionMarkCircleIcon className="h-6 w-6" />
+            </button>
             <button
                 onClick={onOpenCommandBar}
                 className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -176,17 +292,16 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div id="mobile-menu" className="lg:hidden absolute top-20 left-0 w-full h-[calc(100vh-80px)] bg-white dark:bg-[#1a2a1a] z-40">
-          <div className="pt-2 pb-3 px-2 space-y-1">
-            {navItems.map((item) => (
-              <NavItem
-                key={item.view}
-                title={item.title}
-                active={activeView === item.view}
-                onClick={() => handleNavClick(item.view)}
-                isMobile
-              />
-            ))}
+        <div id="mobile-menu" className="lg:hidden absolute top-20 left-0 w-full h-[calc(100vh-80px)] bg-white dark:bg-[#1a2a1a] z-40 overflow-y-auto">
+          <div className="pt-2 pb-8 px-2 space-y-1">
+              {navStructure.links.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} isMobile />)}
+              {navStructure.dropdowns.map(dropdown => (
+                  <MobileDropdown key={dropdown.title} title={dropdown.title}>
+                      {dropdown.items.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} isMobile />)}
+                  </MobileDropdown>
+              ))}
+              {navStructure.tailLinks.map(item => <NavItem key={item.view} {...item} activeView={activeView} onClick={() => handleNavClick(item.view)} isMobile />)}
+
              <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
              <div className="flex items-center justify-between px-3">
                  <span className="text-gray-600 dark:text-gray-300 text-lg">Switch Theme</span>

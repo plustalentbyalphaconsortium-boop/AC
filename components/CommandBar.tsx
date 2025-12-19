@@ -54,7 +54,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ onClose, onExecuteCommand }) =>
       properties: {
         action: {
           type: Type.STRING,
-          description: "The action to perform. Must be one of: 'NAVIGATE', 'SEARCH_JOBS'.",
+          description: "The action to perform. Must be one of: 'NAVIGATE', 'SEARCH_JOBS', 'TUTORIAL'.",
         },
         params: {
           type: Type.OBJECT,
@@ -87,6 +87,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ onClose, onExecuteCommand }) =>
                 Analyze the user's request and determine the correct action and parameters.
                 - For simple navigation requests (e.g., "go to the dashboard", "show me the academy"), use the "NAVIGATE" action and provide the correct "view".
                 - For job search requests (e.g., "find me sales jobs", "look for remote marketing positions"), use the "SEARCH_JOBS" action. Extract the search term and a relevant category. The view for this is always 'Jobs'.
+                - For requests to get help or a tour (e.g., "start tutorial", "show me how this works", "help"), use the "TUTORIAL" action. No parameters are needed.
 
                 User's command: "${inputValue}"
 
@@ -121,7 +122,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ onClose, onExecuteCommand }) =>
     const suggestions = [
         "Go to my dashboard",
         "Find marketing jobs in Remote",
-        "Show me the Alpha Academy",
+        "Show me how to use this page",
         "Take me to the AI Resume Builder",
     ];
 

@@ -54,6 +54,8 @@ function createBlob(data: Float32Array): Blob {
   };
 }
 
+type Tone = 'Friendly' | 'Professional' | 'Creative' | 'Bold';
+
 // --- Main Component ---
 const AIAssistant: React.FC = () => {
     type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error' | 'closed';
@@ -62,6 +64,9 @@ const AIAssistant: React.FC = () => {
     const [currentInput, setCurrentInput] = useState('');
     const [currentOutput, setCurrentOutput] = useState('');
     const [error, setError] = useState('');
+
+    const [selectedTone, setSelectedTone] = useState<Tone>('Friendly');
+    const [customInstruction, setCustomInstruction] = useState('');
 
     const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -113,6 +118,28 @@ const AIAssistant: React.FC = () => {
 
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
+            let systemInstruction = 'You are a career assistant for the Alpha Consortium platform.';
+
+            switch (selectedTone) {
+                case 'Professional':
+                    systemInstruction += ' Your tone should be formal, direct, and focused on providing clear, actionable advice.';
+                    break;
+                case 'Creative':
+                    systemInstruction += ' Your tone should be engaging, expressive, and use imaginative examples to help users think outside the box.';
+                    break;
+                case 'Bold':
+                    systemInstruction += ' Your tone should be confident, assertive, and motivational, pushing users to aim high.';
+                    break;
+                case 'Friendly':
+                default:
+                    systemInstruction += ' Your tone should be friendly, helpful, and conversational. Keep your answers concise.';
+                    break;
+            }
+
+            if (customInstruction.trim()) {
+                systemInstruction += `\n\nAdditionally, follow this specific instruction: ${customInstruction.trim()}`;
+            }
+
             const sessionPromise = ai.live.connect({
                 model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 callbacks: {
@@ -121,6 +148,7 @@ const AIAssistant: React.FC = () => {
                         inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
                         outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
                         outputNodeRef.current = outputAudioContextRef.current.createGain();
+                        outputNodeRef.current.connect(outputAudioContextRef.current.destination);
 
                         mediaStreamSourceRef.current = inputAudioContextRef.current.createMediaStreamSource(stream);
                         scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
@@ -173,6 +201,15 @@ const AIAssistant: React.FC = () => {
                             nextStartTimeRef.current += audioBuffer.duration;
                             sourcesRef.current.add(source);
                         }
+                        
+                        const interrupted = message.serverContent?.interrupted;
+                        if (interrupted) {
+                          for (const source of sourcesRef.current.values()) {
+                            source.stop();
+                            sourcesRef.current.delete(source);
+                          }
+                          nextStartTimeRef.current = 0;
+                        }
                     },
                     onerror: (e: ErrorEvent) => {
                         console.error('Session error:', e);
@@ -189,7 +226,7 @@ const AIAssistant: React.FC = () => {
                     responseModalities: [Modality.AUDIO],
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
-                    systemInstruction: 'You are a friendly and helpful career assistant for the Alpha Consortium platform. Keep your answers concise and conversational.',
+                    systemInstruction: systemInstruction,
                 },
             });
             sessionPromiseRef.current = sessionPromise;
@@ -207,6 +244,8 @@ const AIAssistant: React.FC = () => {
         setConnectionState('idle');
     };
 
+    const isConversationActive = connectionState === 'connecting' || connectionState === 'connected';
+
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
@@ -216,7 +255,55 @@ const AIAssistant: React.FC = () => {
                 </div>
 
                 <div className="mt-12 bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-lg dark:shadow-none space-y-6">
-                    <div ref={chatLogRef} className="h-96 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-4">
+                    {!isConversationActive && (
+                        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-md border border-gray-200 dark:border-gray-700 animate-scale-in">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Customize Your Assistant</h3>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Response Tone
+                                </label>
+                                <div role="radiogroup" className="flex flex-wrap gap-2">
+                                    {(['Friendly', 'Professional', 'Creative', 'Bold'] as Tone[]).map(tone => (
+                                        <button
+                                            key={tone}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={selectedTone === tone}
+                                            onClick={() => setSelectedTone(tone)}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors duration-200 ${
+                                                selectedTone === tone
+                                                ? 'bg-blue-600 text-white shadow'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            {tone}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                             <div>
+                                <label htmlFor="custom-instruction" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Custom Instruction (Optional)
+                                </label>
+                                <textarea
+                                    id="custom-instruction"
+                                    rows={2}
+                                    value={customInstruction}
+                                    onChange={(e) => setCustomInstruction(e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g., 'Act as a pirate career coach.' or 'Always end your responses with a motivational quote.'"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div 
+                        ref={chatLogRef} 
+                        role="log"
+                        aria-live="polite"
+                        aria-atomic="false"
+                        className="h-96 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-4"
+                    >
                         {transcriptionHistory.map((turn, index) => (
                             <div key={index} className={`flex ${turn.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-md p-3 rounded-lg ${turn.speaker === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
@@ -226,7 +313,7 @@ const AIAssistant: React.FC = () => {
                         ))}
                         {currentInput && <div className="flex justify-end"><div className="max-w-md p-3 rounded-lg bg-blue-500 text-white opacity-70"><p>{currentInput}</p></div></div>}
                         {currentOutput && <div className="flex justify-start"><div className="max-w-md p-3 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 opacity-70"><p>{currentOutput}</p></div></div>}
-                         {connectionState === 'idle' && (
+                         {!isConversationActive && transcriptionHistory.length === 0 && (
                              <div className="text-center text-gray-400 dark:text-gray-500 h-full flex items-center justify-center">
                                 Click "Start Conversation" to begin.
                             </div>
@@ -240,7 +327,7 @@ const AIAssistant: React.FC = () => {
                                 <MicrophoneIcon className={`h-8 w-8 transition-colors ${connectionState === 'connected' ? 'text-blue-500' : 'text-gray-400'}`} />
                             </div>
                         </div>
-                        {connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error' ? (
+                        {!isConversationActive ? (
                             <button onClick={handleStartConversation} className="px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700">
                                 Start Conversation
                             </button>

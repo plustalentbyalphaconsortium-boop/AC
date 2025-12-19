@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { LearningPlanData, UserProfile } from '../types';
+import { LearningPlanData, UserProfile, View } from '../types';
 import { MOCK_COURSES } from '../constants';
-import { CpuChipIcon, AcademicCapIcon, LightbulbIcon, SparklesIcon, BriefcaseIcon, ChevronDownIcon } from './icons/Icons';
+import { CpuChipIcon, AcademicCapIcon, LightbulbIcon, SparklesIcon, BriefcaseIcon, ChevronDownIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
 
 const AnalysisCard: React.FC<{
     icon: React.ComponentType<{ className?: string }>;
@@ -21,26 +21,43 @@ const AnalysisCard: React.FC<{
 );
 
 const AccordionItem: React.FC<{
-    item: { step: string; description: string; };
+    item: { step: string; description: string; isCompleted?: boolean };
     index: number;
     isOpen: boolean;
     onToggle: () => void;
-}> = ({ item, index, isOpen, onToggle }) => {
+    onToggleComplete: () => void;
+}> = ({ item, index, isOpen, onToggle, onToggleComplete }) => {
     const contentRef = useRef<HTMLDivElement>(null);
 
     return (
-        <div className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+        <div className={`border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors duration-300 ${item.isCompleted ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}>
             <h2>
-                <button
-                    type="button"
-                    className="flex justify-between items-center w-full p-4 font-semibold text-left text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    onClick={onToggle}
-                    aria-expanded={isOpen}
-                    aria-controls={`accordion-content-${index}`}
-                >
-                    <span>{item.step}</span>
-                    <ChevronDownIcon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
-                </button>
+                <div className="flex w-full items-center">
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={!!item.isCompleted}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleComplete();
+                        }}
+                        className={`ml-4 flex-shrink-0 w-6 h-6 rounded border cursor-pointer flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 ${item.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-400 dark:border-gray-500 hover:border-blue-500'}`}
+                        aria-label={`Mark step ${index + 1} as completed`}
+                    >
+                        {item.isCompleted && <CheckCircleIcon className="w-4 h-4 text-white" aria-hidden="true" />}
+                    </button>
+                    
+                    <button
+                        type="button"
+                        className="flex justify-between items-center w-full p-4 font-semibold text-left text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                        onClick={onToggle}
+                        aria-expanded={isOpen}
+                        aria-controls={`accordion-content-${index}`}
+                    >
+                        <span className={`ml-2 ${item.isCompleted ? 'line-through text-gray-500 dark:text-gray-500' : ''}`}>{item.step}</span>
+                        <ChevronDownIcon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
+                    </button>
+                </div>
             </h2>
             <div
                 ref={contentRef}
@@ -48,7 +65,7 @@ const AccordionItem: React.FC<{
                 style={{ maxHeight: isOpen ? `${contentRef.current?.scrollHeight}px` : '0px' }}
                 className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
             >
-                <div className="p-4 pt-0">
+                <div className="p-4 pt-0 pl-16">
                     <p className="text-gray-600 dark:text-gray-300">{item.description}</p>
                 </div>
             </div>
@@ -57,21 +74,28 @@ const AccordionItem: React.FC<{
 };
 
 
-const RecommendedCourseCard: React.FC<{ course: { title: string; reason: string } }> = ({ course }) => (
+const RecommendedCourseCard: React.FC<{ course: { title: string; reason: string }; onExplore: () => void }> = ({ course, onExplore }) => (
     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-300 dark:border-gray-700 h-full flex flex-col transition-all duration-300 hover:border-blue-400 hover:shadow-md">
         <h4 className="font-bold text-gray-900 dark:text-white">{course.title}</h4>
         <p className="mt-2 text-xs italic text-gray-500 dark:text-gray-400 flex-grow">"{course.reason}"</p>
         <div className="mt-3 text-right">
-            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer">
+            <button 
+                onClick={onExplore}
+                className="text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline bg-transparent border-none p-0 inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            >
                 Explore in Academy &rarr;
-            </span>
+            </button>
         </div>
     </div>
 );
 
+interface SkillCoachProps {
+    setActiveView: (view: View) => void;
+}
 
-const SkillCoach: React.FC = () => {
+const SkillCoach: React.FC<SkillCoachProps> = ({ setActiveView }) => {
     const [skillQuery, setSkillQuery] = useState('');
+    const [careerGoal, setCareerGoal] = useState('');
     const [learningPlan, setLearningPlan] = useState<LearningPlanData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -90,19 +114,24 @@ const SkillCoach: React.FC = () => {
             if (savedProfile) {
                 const parsedProfile = JSON.parse(savedProfile);
                 setUserProfile(parsedProfile);
-                if (!parsedProfile.masterResume) {
-                     setError("Please complete your Master Resume in 'My Dashboard' to get a personalized learning plan.");
-                } else {
-                     setError('');
-                }
             } else {
                 setError("Please create a profile in 'My Dashboard' first to get a personalized learning plan.");
             }
+
+            const savedPlan = localStorage.getItem('activeLearningPlan');
+            if (savedPlan) {
+                setLearningPlan(JSON.parse(savedPlan));
+            }
         } catch (err) {
-            console.error("Failed to load user profile from localStorage", err);
-            setError("Could not load your profile. Please save it in the Dashboard first.");
+            console.error("Failed to load data from localStorage", err);
         }
     }, []);
+
+    useEffect(() => {
+        if (learningPlan) {
+            localStorage.setItem('activeLearningPlan', JSON.stringify(learningPlan));
+        }
+    }, [learningPlan]);
 
 
     const learningPlanSchema = {
@@ -156,10 +185,10 @@ const SkillCoach: React.FC = () => {
             return;
         }
 
-        // Reset state for the practice session
+        // Reset state
         setExerciseSubmission('');
         setExerciseFeedback('');
-        setOpenAccordionIndex(0); // Reset accordion to open the first item
+        setOpenAccordionIndex(0); 
         
         setIsLoading(true);
         setError('');
@@ -173,19 +202,18 @@ const SkillCoach: React.FC = () => {
                 Act as an expert learning and development coach.
                 Your task is to create a structured, personalized learning plan for the skill: "${skillQuery}".
                 
-                **Crucially, you must tailor this plan based on the user's existing experience provided in their resume.** For example, if they are already a senior developer, the plan should be more advanced than for a complete beginner.
-
-                **User's Background (from their master resume):**
-                ${userProfile.masterResume}
+                **User Context:**
+                - **Career Goal:** ${careerGoal || "General upskilling"}
+                - **Current Background (Resume):** ${userProfile.masterResume}
 
                 **Available Alpha Academy Courses:**
                 ${availableCourses}
 
                 **Instructions:**
-                1.  **Learning Path:** Break down the learning process into 3-5 logical steps or weekly goals, tailored to the user's experience level.
-                2.  **Key Concepts:** List 4-6 fundamental concepts the user must understand. Adjust the complexity based on their background.
-                3.  **Recommended Courses:** From the provided list of Alpha Academy courses, identify and recommend up to two that are most relevant to learning this skill. For each recommendation, provide a brief reason why it's a good fit for this user specifically. If no courses are relevant, return an empty array.
-                4.  **Practice Exercise:** Create a simple, actionable practice exercise appropriate for the user's likely starting point.
+                1.  **Learning Path:** Break down the learning process into 3-5 logical steps or weekly goals. Tailor the difficulty and focus to bridge the gap between their current background and their career goal.
+                2.  **Key Concepts:** List 4-6 fundamental concepts the user must understand.
+                3.  **Recommended Courses:** From the provided list of Alpha Academy courses, identify and recommend up to two that are most relevant. For each, provide a reason linked to their goal.
+                4.  **Practice Exercise:** Create a specific, actionable practice exercise.
 
                 Return the entire plan as a single JSON object that matches the provided schema.
             `;
@@ -203,7 +231,13 @@ const SkillCoach: React.FC = () => {
              if (text) {
                 try {
                     const parsedJson = JSON.parse(text);
-                    setLearningPlan(parsedJson);
+                    const planWithMetadata = {
+                        ...parsedJson,
+                        skillName: skillQuery,
+                        careerGoal: careerGoal,
+                        learningPath: parsedJson.learningPath.map((item: any) => ({ ...item, isCompleted: false }))
+                    };
+                    setLearningPlan(planWithMetadata);
                 } catch (jsonError) {
                     console.error("Failed to parse JSON response:", jsonError);
                     setError("Received an invalid learning plan format from the AI. Please try again.");
@@ -230,8 +264,8 @@ const SkillCoach: React.FC = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             const prompt = `
-                Act as a patient and encouraging tutor. The user is learning the skill: "${skillQuery}".
-                Their background is: ${userProfile?.masterResume ? `based on this resume: ${userProfile.masterResume}` : 'that of a beginner.'}
+                Act as a patient and encouraging tutor. The user is learning the skill: "${learningPlan.skillName}".
+                Their goal is: "${learningPlan.careerGoal || 'upskilling'}".
                 
                 They were given the following practice exercise:
                 **Exercise:** "${learningPlan.practiceExercise}"
@@ -240,19 +274,7 @@ const SkillCoach: React.FC = () => {
                 **Submission:** "${exerciseSubmission}"
 
                 Please provide constructive feedback tailored to their likely experience level. Your feedback must be easy to read and follow.
-                Structure your feedback using bullet points for maximum clarity, as follows:
-
-                Start with a positive and encouraging sentence about their effort.
-
-                **What you did well:**
-                * (List one or two positive points here, using bullet points.)
-                * (Another positive point.)
-
-                **Suggestions for improvement:**
-                * (Provide one clear, actionable piece of advice here, as a bullet point.)
-                * (Provide a concrete example of how to apply the advice. For example: "Instead of writing [...], you could try [...]. Here's how that might look: [...]")
-
-                Keep the language simple and the tone supportive.
+                Structure your feedback using bullet points.
             `;
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
@@ -267,6 +289,26 @@ const SkillCoach: React.FC = () => {
         }
     };
 
+    const toggleStepCompletion = (index: number) => {
+        if (!learningPlan) return;
+        const updatedPath = [...learningPlan.learningPath];
+        updatedPath[index].isCompleted = !updatedPath[index].isCompleted;
+        setLearningPlan({ ...learningPlan, learningPath: updatedPath });
+    };
+
+    const handleDeletePlan = () => {
+        if (window.confirm("Are you sure you want to delete this learning plan?")) {
+            setLearningPlan(null);
+            localStorage.removeItem('activeLearningPlan');
+            setSkillQuery('');
+            setCareerGoal('');
+            setError('');
+        }
+    };
+
+    const completionPercentage = learningPlan 
+        ? Math.round((learningPlan.learningPath.filter(s => s.isCompleted).length / learningPlan.learningPath.length) * 100) 
+        : 0;
 
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
@@ -276,56 +318,93 @@ const SkillCoach: React.FC = () => {
                     <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Get a personalized roadmap to master any skill, complete with course recommendations from Alpha Academy.</p>
                 </div>
 
-                <div className="mt-12 max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                         <label htmlFor="skill-query-input" className="sr-only">Skill to Learn</label>
-                         <input
-                            id="skill-query-input"
-                            type="text"
-                            value={skillQuery}
-                            onChange={(e) => setSkillQuery(e.target.value)}
-                            placeholder="e.g., 'Public Speaking', 'Data Analysis with Python'"
-                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            disabled={isLoading}
-                         />
-                         <button
-                            onClick={handleGeneratePlan}
-                            disabled={isLoading || !skillQuery || !userProfile?.masterResume}
-                            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
-                         >
-                             {isLoading ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Generating...
-                                </>
-                            ) : (
-                                 <>
-                                    <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                                    Generate Plan
-                                </>
-                            )}
-                         </button>
+                {!learningPlan ? (
+                    <div className="mt-12 max-w-2xl mx-auto space-y-6">
+                        <div>
+                            <label htmlFor="skill-query-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                What skill do you want to learn?
+                            </label>
+                            <input
+                                id="skill-query-input"
+                                type="text"
+                                value={skillQuery}
+                                onChange={(e) => setSkillQuery(e.target.value)}
+                                placeholder="e.g., 'Public Speaking', 'Data Analysis with Python', 'Negotiation'"
+                                className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="career-goal-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                What is your career goal with this skill? (Optional)
+                            </label>
+                            <textarea
+                                id="career-goal-input"
+                                rows={2}
+                                value={careerGoal}
+                                onChange={(e) => setCareerGoal(e.target.value)}
+                                placeholder="e.g., 'I want to transition into a Project Management role' or 'I need this for a promotion'."
+                                className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="text-center pt-2">
+                            <button
+                                onClick={handleGeneratePlan}
+                                disabled={isLoading || !skillQuery || !userProfile?.masterResume}
+                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Analyzing & Planning...
+                                    </>
+                                ) : (
+                                    <>
+                                        <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
+                                        Generate My Plan
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                <div className="mt-16" aria-live="polite">
-                    {isLoading ? (
-                         <div className="flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
+                ) : (
+                    <div className="mt-12 space-y-8 animate-scale-in">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Plan: {learningPlan.skillName}</h3>
+                                {learningPlan.careerGoal && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Goal: {learningPlan.careerGoal}</p>}
+                            </div>
+                            <button 
+                                onClick={handleDeletePlan} 
+                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                            >
+                                <TrashIcon className="h-4 w-4" /> Start Over
+                            </button>
                         </div>
-                    ) : error ? (
-                        <div role="alert" className="mt-4 max-w-2xl mx-auto text-center text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30 p-4 rounded-md">
-                            <h3 className="font-bold">Action Required</h3>
-                            <p>{error}</p>
+
+                        <div className="relative pt-1">
+                            <div className="flex mb-2 items-center justify-between">
+                                <div>
+                                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200 dark:text-blue-300 dark:bg-blue-900/60">
+                                        Progress
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xs font-semibold inline-block text-blue-600 dark:text-blue-400">
+                                        {completionPercentage}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200 dark:bg-gray-700">
+                                <div style={{ width: `${completionPercentage}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500 ease-out"></div>
+                            </div>
                         </div>
-                    ) : learningPlan ? (
+
                         <div className="space-y-6">
-                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 -mb-2">
-                                Here is a learning plan tailored to your profile.
-                            </p>
                             <AnalysisCard icon={BriefcaseIcon} title="Your Learning Path">
                                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                                     {learningPlan.learningPath.map((item, index) => (
@@ -335,6 +414,9 @@ const SkillCoach: React.FC = () => {
                                             item={item}
                                             isOpen={openAccordionIndex === index}
                                             onToggle={() => setOpenAccordionIndex(openAccordionIndex === index ? null : index)}
+                                            onToggleComplete={() => {
+                                                toggleStepCompletion(index);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -348,7 +430,11 @@ const SkillCoach: React.FC = () => {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {learningPlan.recommendedCourses.map((course, index) => (
-                                            <RecommendedCourseCard key={index} course={course} />
+                                            <RecommendedCourseCard 
+                                                key={index} 
+                                                course={course} 
+                                                onExplore={() => setActiveView(View.Academy)} 
+                                            />
                                         ))}
                                     </div>
                                 </div>
@@ -360,7 +446,7 @@ const SkillCoach: React.FC = () => {
                                 </ul>
                             </AnalysisCard>
 
-                             <AnalysisCard icon={SparklesIcon} title="Your First Practice Exercise">
+                             <AnalysisCard icon={SparklesIcon} title="Practice Exercise">
                                 <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{learningPlan.practiceExercise}</p>
                                 
                                 <div className="mt-4">
@@ -372,7 +458,7 @@ const SkillCoach: React.FC = () => {
                                         rows={5}
                                         value={exerciseSubmission}
                                         onChange={(e) => setExerciseSubmission(e.target.value)}
-                                        className="w-full bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                        className="w-full bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Paste your code, write your paragraph, or describe your results here..."
                                         disabled={isGettingFeedback}
                                     />
@@ -399,9 +485,19 @@ const SkillCoach: React.FC = () => {
                                 </div>
                             </AnalysisCard>
                         </div>
-                    ) : (
-                         <div className="text-center text-gray-500 dark:text-gray-400 pt-8">
-                            <p>Enter a skill above to generate your personalized learning plan.</p>
+                    </div>
+                )}
+                
+                <div className="mt-16" aria-live="polite">
+                    {isLoading && (
+                         <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
+                        </div>
+                    )}
+                    {error && (
+                        <div role="alert" className="mt-4 max-w-2xl mx-auto text-center text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30 p-4 rounded-md">
+                            <h3 className="font-bold">Action Required</h3>
+                            <p>{error}</p>
                         </div>
                     )}
                 </div>

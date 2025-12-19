@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription } from '../types';
 import { getJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
+import { GoogleGenAI, Type } from "@google/genai";
 
 const STATUS_STYLES: { [key in ApplicationStatus]: string } = {
     'Applied': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
@@ -16,13 +17,49 @@ const STATUS_STYLES: { [key in ApplicationStatus]: string } = {
 
 const APPLICATION_STATUSES: ApplicationStatus[] = ['Applied', 'Interviewing', 'Offer Received', 'Rejected'];
 
+const highlightMatches = (text: string, searchTerm: string | undefined): React.ReactNode => {
+    if (!text) return text;
+    if (!searchTerm?.trim()) {
+        return text;
+    }
+
+    const searchWords = searchTerm.trim().split(/\s+/).filter(Boolean).map(word =>
+        word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+
+    if (searchWords.length === 0) {
+        return text;
+    }
+
+    const regex = new RegExp(`(${searchWords.join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+        <>
+            {parts.map((part, index) => {
+                const isMatch = searchWords.some(word => new RegExp(`^${word}$`, 'i').test(part));
+
+                if (isMatch) {
+                    return (
+                        <mark key={index} className="bg-yellow-200 dark:bg-yellow-700/50 rounded-sm px-0.5 text-inherit dark:text-inherit">
+                            {part}
+                        </mark>
+                    );
+                }
+                return part;
+            })}
+        </>
+    );
+};
+
 
 const JobCard: React.FC<{
     job: Job;
     onUpdate: (id: number, updates: Partial<Pick<Job, 'applicationStatus' | 'notes'>>) => void;
     onClear: (id: number) => void;
     onApplyNow: (job: Job) => void;
-}> = ({ job, onUpdate, onClear, onApplyNow }) => {
+    searchTerm?: string;
+}> = ({ job, onUpdate, onClear, onApplyNow, searchTerm }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [notes, setNotes] = useState(job.notes || '');
     const [status, setStatus] = useState(job.applicationStatus);
@@ -74,13 +111,18 @@ const JobCard: React.FC<{
         onClear(job.id);
         setIsEditing(false);
     }
+    
+    const highlightedTitle = useMemo(() => highlightMatches(job.title, searchTerm), [job.title, searchTerm]);
+    const highlightedCompany = useMemo(() => highlightMatches(job.company, searchTerm), [job.company, searchTerm]);
+    const highlightedDescription = useMemo(() => highlightMatches(job.description, searchTerm), [job.description, searchTerm]);
+
 
     return (
         <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none">
             <div className="flex justify-between items-start">
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{job.title}</h3>
-                    <p className="text-sm text-blue-600 dark:text-blue-300">{job.company}</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{highlightedTitle}</h3>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">{highlightedCompany}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {job.location}
                         {job.salaryMin && job.salaryMax && (
@@ -105,7 +147,7 @@ const JobCard: React.FC<{
                     <p className="mt-2 text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap font-mono text-xs">{job.qualifications}</p>
                 </div>
             )}
-            <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm flex-grow">{job.description}</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm flex-grow">{highlightedDescription}</p>
             
             {isEditing && isTracked && (
                 <div className="mt-4 space-y-3">
@@ -150,7 +192,7 @@ const JobCard: React.FC<{
 
             <div className="mt-4">
                 {!isTracked ? (
-                     <button ref={applyButtonRef} onClick={() => onApplyNow(job)} className="w-full rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800">
+                     <button ref={applyButtonRef} onClick={() => onApplyNow(job)} aria-label={`Apply now for ${job.title} at ${job.company}`} className="w-full rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800">
                         Apply Now
                     </button>
                 ) : !isEditing && (
@@ -192,10 +234,12 @@ interface FilterButtonGroupProps {
   items: string[];
   activeItem: string;
   onItemSelect: (item: string) => void;
+  tutorialId?: string;
 }
 
-const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, activeItem, onItemSelect }) => {
+const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, activeItem, onItemSelect, tutorialId }) => {
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const legendId = `filter-legend-${legend.replace(/\s+/g, '-').toLowerCase()}`;
 
   useEffect(() => {
     buttonRefs.current = buttonRefs.current.slice(0, items.length);
@@ -222,10 +266,11 @@ const FilterButtonGroup: React.FC<FilterButtonGroupProps> = ({ legend, items, ac
   };
 
   return (
-    <fieldset>
-      <legend className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 text-center">{legend}</legend>
+    <fieldset data-tutorial-id={tutorialId}>
+      <legend id={legendId} className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 text-center">{legend}</legend>
       <div
         role="radiogroup"
+        aria-labelledby={legendId}
         onKeyDown={handleKeyDown}
         className="flex flex-wrap justify-center gap-2"
       >
@@ -263,10 +308,16 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
     const [activeCategory, setActiveCategory] = useState(initialCategory);
     const [activeStatusFilter, setActiveStatusFilter] = useState('All');
+    const [minSalaryFilter, setMinSalaryFilter] = useState<number | null>(null);
     const [applyingForJob, setApplyingForJob] = useState<Job | null>(null);
     const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
     const [isManageAlertsModalOpen, setIsManageAlertsModalOpen] = useState(false);
     
+    // AI Magic Search State
+    const [aiQuery, setAiQuery] = useState('');
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState('');
+
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -310,7 +361,6 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
         fetchAndMergeJobs();
     }, []);
 
-    // Effect to handle initial search parameters from props (e.g., command bar)
     useEffect(() => {
         setSearchTerm(initialSearchTerm);
         setActiveCategory(initialCategory);
@@ -323,6 +373,58 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
             console.error("Failed to save subscriptions to localStorage", error);
         }
     }, [subscriptions]);
+
+    const handleAiSearch = async () => {
+        if (!aiQuery.trim()) return;
+        setIsAiLoading(true);
+        setAiFeedback('');
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const prompt = `
+                You are a smart job search assistant. Parse the following natural language query into search filters.
+                Available categories: ${JOB_CATEGORIES.join(', ')}.
+                
+                Query: "${aiQuery}"
+
+                Output a JSON object with:
+                - searchTerm: (string) The core keywords for searching title or location.
+                - category: (string) Must be one of the available categories. Default to "All".
+                - minSalary: (number or null) Minimum salary if mentioned (e.g., "$90k" -> 90000).
+                
+                Only return the JSON.
+            `;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            searchTerm: { type: Type.STRING },
+                            category: { type: Type.STRING },
+                            minSalary: { type: Type.NUMBER, nullable: true }
+                        },
+                        required: ["searchTerm", "category", "minSalary"]
+                    }
+                }
+            });
+
+            const result = JSON.parse(response.text);
+            setSearchTerm(result.searchTerm);
+            setActiveCategory(result.category);
+            setMinSalaryFilter(result.minSalary);
+            setAiFeedback(`Applied filters for "${result.searchTerm}" in ${result.category}${result.minSalary ? ` with salary > $${result.minSalary.toLocaleString()}` : ''}`);
+            setAiQuery('');
+        } catch (err) {
+            console.error("AI Search Failed:", err);
+            setAiFeedback("Sorry, I couldn't process that request. Try standard search!");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
 
     const handleAddSubscription = (newSub: Omit<JobAlertSubscription, 'id'>) => {
         const subWithId = { ...newSub, id: self.crypto.randomUUID() };
@@ -387,20 +489,99 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     
     const STATUS_FILTERS = ['All', 'Tracked', ...APPLICATION_STATUSES];
 
-    const filteredJobs = useMemo(() => allJobs.filter(job => {
-        const matchesCategory = activeCategory === 'All' || job.category === activeCategory;
-        const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) 
-            || job.company.toLowerCase().includes(searchTerm.toLowerCase())
-            || job.location.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesStatus = (() => {
-            if (activeStatusFilter === 'All') return true;
-            if (activeStatusFilter === 'Tracked') return job.applicationStatus !== undefined;
-            return job.applicationStatus === activeStatusFilter;
-        })();
+    const getNGrams = (str: string, size = 2): Set<string> => {
+        const ngrams = new Set<string>();
+        if (!str || str.length < size) {
+            return ngrams;
+        }
+        const cleanStr = str.replace(/\s+/g, ' ');
+        for (let i = 0; i <= cleanStr.length - size; i++) {
+            ngrams.add(cleanStr.substring(i, i + size));
+        }
+        return ngrams;
+    };
 
-        return matchesCategory && matchesSearch && matchesStatus;
-    }), [allJobs, activeCategory, searchTerm, activeStatusFilter]);
+    const jaccardSimilarity = (setA: Set<string>, setB: Set<string>): number => {
+        const intersection = new Set([...setA].filter(x => setB.has(x)));
+        const union = new Set([...setA, ...setB]);
+        if (union.size === 0) return 0;
+        return intersection.size / union.size;
+    };
+
+    const calculateRelevance = (job: Job, query: string): number => {
+        const normalizedQuery = query.toLowerCase().trim();
+        if (!normalizedQuery) return 0;
+
+        const weights = {
+            title: 5,
+            company: 3,
+            category: 2,
+            location: 1.5,
+            qualifications: 1,
+            description: 0.5,
+        };
+
+        let totalScore = 0;
+        const queryNgrams = getNGrams(normalizedQuery);
+
+        for (const key in weights) {
+            const field = key as keyof typeof weights;
+            const jobFieldValue = (job[field as keyof Job] as string | undefined)?.toLowerCase() || '';
+            if (!jobFieldValue) continue;
+
+            let fieldScore = 0;
+            if (jobFieldValue.includes(normalizedQuery)) {
+                fieldScore += 10;
+            }
+
+            const queryWords = new Set(normalizedQuery.split(/\s+/));
+            const fieldWords = new Set(jobFieldValue.split(/\s+/));
+            let matchedWords = 0;
+            queryWords.forEach(word => {
+                if (fieldWords.has(word)) {
+                    matchedWords++;
+                }
+            });
+            if (queryWords.size > 0) {
+                fieldScore += (matchedWords / queryWords.size) * 5;
+            }
+
+            const fieldNgrams = getNGrams(jobFieldValue);
+            const similarity = jaccardSimilarity(queryNgrams, fieldNgrams);
+            fieldScore += similarity * 2;
+
+            totalScore += fieldScore * weights[field];
+        }
+        return totalScore;
+    };
+
+
+    const filteredJobs = useMemo(() => {
+        const preFilteredJobs = allJobs.filter(job => {
+            const matchesCategory = activeCategory === 'All' || job.category === activeCategory;
+            const matchesStatus = (() => {
+                if (activeStatusFilter === 'All') return true;
+                if (activeStatusFilter === 'Tracked') return job.applicationStatus !== undefined;
+                return job.applicationStatus === activeStatusFilter;
+            })();
+            const matchesSalary = minSalaryFilter ? (job.salaryMax || 0) >= minSalaryFilter : true;
+            return matchesCategory && matchesStatus && matchesSalary;
+        });
+
+        if (!searchTerm.trim()) {
+            return preFilteredJobs;
+        }
+
+        const scoredJobs = preFilteredJobs
+            .map(job => ({
+                job,
+                score: calculateRelevance(job, searchTerm),
+            }))
+            .filter(item => item.score > 0.1)
+            .sort((a, b) => b.score - a.score);
+            
+        return scoredJobs.map(item => item.job);
+    }, [allJobs, activeCategory, searchTerm, activeStatusFilter, minSalaryFilter]);
     
     const resultsCount = filteredJobs.length;
     const resultsText = `${resultsCount} job${resultsCount !== 1 ? 's' : ''} found.`;
@@ -429,9 +610,9 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
         return (
             <>
                 <h3 id="job-results-heading" className="sr-only">Job Search Results</h3>
-                <ul aria-labelledby="job-results-heading" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <ul data-tutorial-id="job-results-list" aria-labelledby="job-results-heading" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredJobs.length > 0 ? (
-                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} />)
+                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} searchTerm={searchTerm} />)
                     ) : (
                         <li className="text-gray-500 dark:text-gray-400 col-span-full text-center py-10">
                             <p>No jobs found matching your criteria.</p>
@@ -449,18 +630,56 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Find Your Opportunity</h2>
                     <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Browse thousands of jobs from top companies and track your applications.</p>
                 </div>
+
+                {/* AI-Powered Search Section */}
+                <div className="mt-12 max-w-4xl mx-auto">
+                    <div className={`relative p-1 rounded-xl transition-all duration-500 ${isAiLoading ? 'animate-pulse-border bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500' : 'bg-gray-200 dark:bg-gray-700/50'}`}>
+                        <div className="bg-white dark:bg-gray-900 rounded-lg flex items-center p-2 gap-2">
+                            <div className="flex-shrink-0 pl-3">
+                                <SparklesIcon className={`h-6 w-6 ${isAiLoading ? 'text-purple-500 animate-bounce' : 'text-blue-500'}`} />
+                            </div>
+                            <input
+                                type="text"
+                                value={aiQuery}
+                                onChange={(e) => setAiQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAiSearch()}
+                                placeholder="Magic Search: 'Find remote sales roles above $80k'..."
+                                className="flex-grow bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm py-3 px-2"
+                                disabled={isAiLoading}
+                            />
+                            <button
+                                onClick={handleAiSearch}
+                                disabled={isAiLoading || !aiQuery.trim()}
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {isAiLoading ? 'Analyzing...' : 'Magic Search'}
+                            </button>
+                        </div>
+                    </div>
+                    {aiFeedback && (
+                        <p className={`mt-2 text-xs font-medium text-center animate-scale-in ${aiFeedback.includes('Applied') ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                            {aiFeedback}
+                            {aiFeedback.includes('Applied') && (
+                                <button onClick={() => { setSearchTerm(''); setActiveCategory('All'); setMinSalaryFilter(null); setAiFeedback(''); }} className="ml-2 underline text-gray-500">Reset</button>
+                            )}
+                        </p>
+                    )}
+                </div>
                 
-                <div className="mt-12 max-w-4xl mx-auto space-y-6">
-                    <div className="relative">
+                <div className="mt-8 max-w-4xl mx-auto space-y-6">
+                    <div className="relative" data-tutorial-id="job-search-input">
                          <label htmlFor="job-search-input" className="sr-only">Search keywords, job titles, companies, or locations</label>
                          <input
                             id="job-search-input"
                             type="text"
-                            placeholder="Search keywords, job titles, companies, or locations..."
+                            placeholder="Standard search keywords..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => { setSearchTerm(e.target.value); setAiFeedback(''); }}
                             className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         />
+                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                        </div>
                     </div>
                     
                     <FilterButtonGroup 
@@ -468,14 +687,30 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                         items={JOB_CATEGORIES}
                         activeItem={activeCategory}
                         onItemSelect={setActiveCategory}
+                        tutorialId="job-category-filter"
                     />
 
-                    <FilterButtonGroup
-                        legend="Filter by Application Status"
-                        items={STATUS_FILTERS}
-                        activeItem={activeStatusFilter}
-                        onItemSelect={setActiveStatusFilter}
-                    />
+                    <div className="flex flex-col sm:flex-row justify-center gap-8">
+                        <FilterButtonGroup
+                            legend="Filter by Application Status"
+                            items={STATUS_FILTERS}
+                            activeItem={activeStatusFilter}
+                            onItemSelect={setActiveStatusFilter}
+                            tutorialId="job-status-filter"
+                        />
+                        {minSalaryFilter !== null && (
+                            <div className="flex flex-col items-center">
+                                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Salary Minimum</span>
+                                <button 
+                                    onClick={() => setMinSalaryFilter(null)}
+                                    className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-red-100 transition-colors group"
+                                >
+                                    ${minSalaryFilter.toLocaleString()}+ 
+                                    <TrashIcon className="h-3 w-3 group-hover:text-red-500" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-12 max-w-4xl mx-auto">
@@ -496,6 +731,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                              {currentAlert ? (
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
+                                    aria-label="Manage all active job alerts"
                                     className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
                                 >
                                     Manage Alerts
@@ -503,6 +739,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                              ) : (
                                 <button
                                     onClick={() => setIsAlertModalOpen(true)}
+                                    aria-label="Create a job alert for the current search criteria"
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-colors duration-200"
                                 >
                                     Create Alert
@@ -511,6 +748,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                               {subscriptions.length > 0 && !currentAlert && (
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
+                                    aria-label={`Manage your ${subscriptions.length} job alerts`}
                                     className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
                                 >
                                     Manage Alerts ({subscriptions.length})
