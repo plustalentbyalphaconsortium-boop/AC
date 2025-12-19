@@ -138,17 +138,17 @@ const VideoGenerator: React.FC = () => {
     if (!isKeySelected) {
         return (
             <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 flex items-center justify-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
-                <div className="max-w-xl mx-auto text-center bg-white dark:bg-gray-800/30 backdrop-blur-sm p-8 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-lg">
-                    <VideoCameraIcon className="h-12 w-12 mx-auto text-blue-500" />
+                <div className="max-w-xl mx-auto text-center bg-white dark:bg-gray-800/30 backdrop-blur-sm p-8 rounded-lg border border-gray-200 dark:border-orange-500/20 shadow-lg">
+                    <VideoCameraIcon className="h-12 w-12 mx-auto text-orange-500" />
                     <h2 className="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl font-orbitron">API Key Required</h2>
                     <p className="mt-4 text-gray-600 dark:text-gray-300">
                         To use the AI Video Generator, you need to select an API key. This feature may incur costs based on usage.
-                        Please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">billing documentation</a> for more details.
+                        Please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">billing documentation</a> for more details.
                     </p>
                     <div className="mt-6">
                         <button
                             onClick={handleSelectKey}
-                            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500"
+                            className="inline-flex items-center justify-center rounded-md bg-orange-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-orange-500"
                         >
                             Select API Key
                         </button>
@@ -176,7 +176,7 @@ const VideoGenerator: React.FC = () => {
                             <textarea
                                 id="video-prompt"
                                 rows={5}
-                                className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                                 placeholder="e.g., A majestic eagle soaring over a mountain range at sunrise"
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
@@ -205,7 +205,7 @@ const VideoGenerator: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={triggerFileSelect}
-                                    className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center text-gray-500 dark:text-gray-400 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                                     disabled={isLoading}
                                 >
                                     Click to upload image
@@ -216,7 +216,7 @@ const VideoGenerator: React.FC = () => {
                             <button
                                 onClick={handleGenerateVideo}
                                 disabled={isLoading || !prompt}
-                                className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
+                                className="w-full inline-flex items-center justify-center rounded-md bg-orange-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
                             >
                                 <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                                 Generate Video
@@ -225,10 +225,10 @@ const VideoGenerator: React.FC = () => {
                     </div>
 
                     {/* Output Section */}
-                    <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-blue-500/20 aspect-video flex items-center justify-center flex-col sticky top-24 shadow-md dark:shadow-none">
+                    <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-orange-500/20 aspect-video flex items-center justify-center flex-col sticky top-24 shadow-md dark:shadow-none">
                         {isLoading ? (
                             <div className="text-center" aria-live="polite">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto"></div>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 dark:border-orange-400 mx-auto"></div>
                                 <p className="mt-4 text-gray-600 dark:text-gray-300 font-semibold">{loadingMessage}</p>
                                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Video generation can take a few minutes. Please stay on this page.</p>
                             </div>
@@ -244,7 +244,7 @@ const VideoGenerator: React.FC = () => {
                                     <a
                                         href={generatedVideoUrl}
                                         download={`alpha-consortium-video-${lastUsedPrompt.slice(0, 20).replace(/\s/g, '_')}.mp4`}
-                                        className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+                                        className="inline-flex items-center justify-center rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500"
                                     >
                                         Download Video
                                     </a>

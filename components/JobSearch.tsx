@@ -633,10 +633,10 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
                 {/* AI-Powered Search Section */}
                 <div className="mt-12 max-w-4xl mx-auto">
-                    <div className={`relative p-1 rounded-xl transition-all duration-500 ${isAiLoading ? 'animate-pulse-border bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500' : 'bg-gray-200 dark:bg-gray-700/50'}`}>
+                    <div className={`relative p-1 rounded-xl transition-all duration-500 ${isAiLoading ? 'animate-pulse-border bg-gradient-to-r from-blue-500 via-orange-500 to-yellow-500' : 'bg-gray-200 dark:bg-gray-700/50'}`}>
                         <div className="bg-white dark:bg-gray-900 rounded-lg flex items-center p-2 gap-2">
                             <div className="flex-shrink-0 pl-3">
-                                <SparklesIcon className={`h-6 w-6 ${isAiLoading ? 'text-purple-500 animate-bounce' : 'text-blue-500'}`} />
+                                <SparklesIcon className={`h-6 w-6 ${isAiLoading ? 'text-orange-500 animate-bounce' : 'text-orange-500'}`} />
                             </div>
                             <input
                                 type="text"
@@ -650,7 +650,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                             <button
                                 onClick={handleAiSearch}
                                 disabled={isAiLoading || !aiQuery.trim()}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isAiLoading ? 'Analyzing...' : 'Magic Search'}
                             </button>
@@ -675,7 +675,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                             placeholder="Standard search keywords..."
                             value={searchTerm}
                             onChange={(e) => { setSearchTerm(e.target.value); setAiFeedback(''); }}
-                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                         />
                          <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -714,12 +714,12 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                 </div>
 
                 <div className="mt-12 max-w-4xl mx-auto">
-                    <div className="bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm p-4 rounded-lg border border-blue-200 dark:border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="bg-orange-50 dark:bg-orange-900/30 backdrop-blur-sm p-4 rounded-lg border border-orange-200 dark:border-orange-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <BellIcon className="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" aria-hidden="true" />
+                            <BellIcon className="h-6 w-6 text-orange-500 dark:text-orange-300 flex-shrink-0" aria-hidden="true" />
                             <div>
-                                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Job Alerts</h4>
-                                <p className="text-blue-700 dark:text-blue-300/90 text-sm">
+                                <h4 className="font-semibold text-orange-800 dark:text-orange-200">Job Alerts</h4>
+                                <p className="text-orange-700 dark:text-orange-300/90 text-sm">
                                     {currentAlert 
                                         ? `You have an active alert for this search.`
                                         : `Get notified when new jobs match your criteria.`
@@ -732,7 +732,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
                                     aria-label="Manage all active job alerts"
-                                    className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
+                                    className="px-4 py-2 text-sm font-medium text-orange-700 dark:text-orange-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-orange-300 dark:border-orange-500/50"
                                 >
                                     Manage Alerts
                                 </button>
@@ -740,7 +740,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                                 <button
                                     onClick={() => setIsAlertModalOpen(true)}
                                     aria-label="Create a job alert for the current search criteria"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-colors duration-200"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-500 transition-colors duration-200"
                                 >
                                     Create Alert
                                 </button>
@@ -749,7 +749,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
                                     aria-label={`Manage your ${subscriptions.length} job alerts`}
-                                    className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
+                                    className="px-4 py-2 text-sm font-medium text-orange-700 dark:text-orange-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-orange-300 dark:border-orange-500/50"
                                 >
                                     Manage Alerts ({subscriptions.length})
                                 </button>

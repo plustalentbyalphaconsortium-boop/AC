@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
     };
 
     const statusData = [
-        { name: 'Applied', value: trackedJobs.filter(j => j.applicationStatus === 'Applied').length, color: '#3b82f6' },
+        { name: 'Applied', value: trackedJobs.filter(j => j.applicationStatus === 'Applied').length, color: '#f97316' },
         { name: 'Interviewing', value: trackedJobs.filter(j => j.applicationStatus === 'Interviewing').length, color: '#eab308' },
         { name: 'Offer Received', value: trackedJobs.filter(j => j.applicationStatus === 'Offer Received').length, color: '#22c55e' },
         { name: 'Rejected', value: trackedJobs.filter(j => j.applicationStatus === 'Rejected').length, color: '#ef4444' },

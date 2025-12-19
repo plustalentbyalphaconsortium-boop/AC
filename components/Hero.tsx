@@ -11,11 +11,11 @@ const FeatureCard: React.FC<{ feature: Feature; setActiveView: (view: View) => v
     return (
         <button
             onClick={() => setActiveView(view)}
-            className="bg-white/60 dark:bg-gray-800/30 backdrop-blur-md rounded-xl border border-blue-500/20 p-6 text-left transition-all duration-300 ease-in-out group hover:border-blue-400 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 transform hover:-translate-y-1"
+            className="bg-white/60 dark:bg-gray-800/30 backdrop-blur-md rounded-xl border border-orange-500/20 p-6 text-left transition-all duration-300 ease-in-out group hover:border-orange-400 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 transform hover:-translate-y-1"
             aria-label={`Go to ${title}`}
         >
             <div className="flex items-center gap-4 mb-3">
-                <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 transition-transform duration-300 group-hover:scale-110">
+                <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 transition-transform duration-300 group-hover:scale-110">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="text-md font-bold text-gray-900 dark:text-white">{title}</h3>
