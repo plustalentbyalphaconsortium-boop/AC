@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { TranscriptionTurn } from '../types';
 import { MicrophoneIcon } from './icons/Icons';
+import { STRINGS } from '../strings';
 
 // --- Helper Functions for Audio Encoding/Decoding ---
 function encode(bytes: Uint8Array) {
@@ -118,26 +119,26 @@ const AIAssistant: React.FC = () => {
 
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-            let systemInstruction = 'You are a career assistant for the Alpha Consortium platform.';
+            let systemInstruction = STRINGS.SYSTEM_INSTRUCTION_BASE;
 
             switch (selectedTone) {
                 case 'Professional':
-                    systemInstruction += ' Your tone should be formal, direct, and focused on providing clear, actionable advice.';
+                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_PROFESSIONAL;
                     break;
                 case 'Creative':
-                    systemInstruction += ' Your tone should be engaging, expressive, and use imaginative examples to help users think outside the box.';
+                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_CREATIVE;
                     break;
                 case 'Bold':
-                    systemInstruction += ' Your tone should be confident, assertive, and motivational, pushing users to aim high.';
+                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_BOLD;
                     break;
                 case 'Friendly':
                 default:
-                    systemInstruction += ' Your tone should be friendly, helpful, and conversational. Keep your answers concise.';
+                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_FRIENDLY;
                     break;
             }
 
             if (customInstruction.trim()) {
-                systemInstruction += `\n\nAdditionally, follow this specific instruction: ${customInstruction.trim()}`;
+                systemInstruction += `${STRINGS.SYSTEM_INSTRUCTION_CUSTOM_PREFIX}${customInstruction.trim()}`;
             }
 
             const sessionPromise = ai.live.connect({
@@ -213,7 +214,7 @@ const AIAssistant: React.FC = () => {
                     },
                     onerror: (e: ErrorEvent) => {
                         console.error('Session error:', e);
-                        setError('A connection error occurred. Please try again.');
+                        setError(STRINGS.ERROR_CONNECTION);
                         setConnectionState('error');
                         cleanup();
                     },
@@ -233,7 +234,7 @@ const AIAssistant: React.FC = () => {
 
         } catch (err) {
             console.error(err);
-            setError('Could not access the microphone. Please grant permission and try again.');
+            setError(STRINGS.ERROR_MICROPHONE);
             setConnectionState('error');
         }
     };
@@ -250,17 +251,17 @@ const AIAssistant: React.FC = () => {
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Real-Time AI Assistant</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Have a voice conversation with your career assistant.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">{STRINGS.TITLE}</h2>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">{STRINGS.SUBTITLE}</p>
                 </div>
 
                 <div className="mt-12 bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-lg dark:shadow-none space-y-6">
                     {!isConversationActive && (
                         <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-md border border-gray-200 dark:border-gray-700 animate-scale-in">
-                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Customize Your Assistant</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{STRINGS.CUSTOMIZE_SECTION_TITLE}</h3>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Response Tone
+                                    {STRINGS.RESPONSE_TONE_LABEL}
                                 </label>
                                 <div role="radiogroup" className="flex flex-wrap gap-2">
                                     {(['Friendly', 'Professional', 'Creative', 'Bold'] as Tone[]).map(tone => (
@@ -283,7 +284,7 @@ const AIAssistant: React.FC = () => {
                             </div>
                              <div>
                                 <label htmlFor="custom-instruction" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Custom Instruction (Optional)
+                                    {STRINGS.CUSTOM_INSTRUCTION_LABEL}
                                 </label>
                                 <textarea
                                     id="custom-instruction"
@@ -291,7 +292,7 @@ const AIAssistant: React.FC = () => {
                                     value={customInstruction}
                                     onChange={(e) => setCustomInstruction(e.target.value)}
                                     className="w-full bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g., 'Act as a pirate career coach.' or 'Always end your responses with a motivational quote.'"
+                                    placeholder={STRINGS.CUSTOM_INSTRUCTION_PLACEHOLDER}
                                 />
                             </div>
                         </div>
@@ -315,7 +316,7 @@ const AIAssistant: React.FC = () => {
                         {currentOutput && <div className="flex justify-start"><div className="max-w-md p-3 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 opacity-70"><p>{currentOutput}</p></div></div>}
                          {!isConversationActive && transcriptionHistory.length === 0 && (
                              <div className="text-center text-gray-400 dark:text-gray-500 h-full flex items-center justify-center">
-                                Click "Start Conversation" to begin.
+                                {STRINGS.EMPTY_STATE_MESSAGE}
                             </div>
                          )}
                     </div>
@@ -329,13 +330,13 @@ const AIAssistant: React.FC = () => {
                         </div>
                         {!isConversationActive ? (
                             <button onClick={handleStartConversation} className="px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700">
-                                Start Conversation
+                                {STRINGS.START_CONVERSATION}
                             </button>
                         ) : connectionState === 'connecting' ? (
-                            <span className="text-gray-500 dark:text-gray-400">Connecting...</span>
+                            <span className="text-gray-500 dark:text-gray-400">{STRINGS.CONNECTING}</span>
                         ) : (
                             <button onClick={handleEndConversation} className="px-6 py-3 text-base font-semibold text-white bg-red-600 rounded-md shadow-lg hover:bg-red-700">
-                                End Conversation
+                                {STRINGS.END_CONVERSATION}
                             </button>
                         )}
                         {error && <p className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</p>}
