@@ -5,6 +5,13 @@ import { MicrophoneIcon } from './icons/Icons';
 import { STRINGS } from '../strings';
 
 // --- Helper Functions for Audio Encoding/Decoding ---
+
+/**
+ * Encodes a Uint8Array to a base64 string.
+ *
+ * @param bytes - The input byte array.
+ * @returns The base64 encoded string.
+ */
 function encode(bytes: Uint8Array) {
   let binary = '';
   const len = bytes.byteLength;
@@ -14,6 +21,12 @@ function encode(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+/**
+ * Decodes a base64 string to a Uint8Array.
+ *
+ * @param base64 - The base64 encoded string.
+ * @returns The decoded byte array.
+ */
 function decode(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -24,6 +37,15 @@ function decode(base64: string) {
   return bytes;
 }
 
+/**
+ * Decodes audio data into an AudioBuffer.
+ *
+ * @param data - The raw audio data as a Uint8Array.
+ * @param ctx - The AudioContext to use for creating the buffer.
+ * @param sampleRate - The sample rate of the audio data.
+ * @param numChannels - The number of channels in the audio data.
+ * @returns A promise that resolves to the decoded AudioBuffer.
+ */
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -43,6 +65,12 @@ async function decodeAudioData(
   return buffer;
 }
 
+/**
+ * Creates a Blob from Float32Array audio data.
+ *
+ * @param data - The audio data.
+ * @returns A Blob object containing the audio data.
+ */
 function createBlob(data: Float32Array): Blob {
   const l = data.length;
   const int16 = new Int16Array(l);
@@ -58,6 +86,21 @@ function createBlob(data: Float32Array): Blob {
 type Tone = typeof STRINGS.TONE_FRIENDLY | typeof STRINGS.TONE_PROFESSIONAL | typeof STRINGS.TONE_CREATIVE | typeof STRINGS.TONE_BOLD;
 
 // --- Main Component ---
+
+/**
+ * AIAssistant Component
+ *
+ * This component provides an interface for a real-time voice interaction with an AI assistant
+ * powered by Google's GenAI. It handles audio recording, streaming to the AI model,
+ * playing back the AI's audio response, and displaying the transcription history.
+ *
+ * Features:
+ * - Real-time audio streaming (input and output).
+ * - Transcription display for both user and AI.
+ * - Customizable tone/persona for the AI.
+ * - Custom instructions for the AI.
+ * - Visual feedback for connection state and audio activity.
+ */
 const AIAssistant: React.FC = () => {
     type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error' | 'closed';
     const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
