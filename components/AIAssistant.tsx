@@ -1,8 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { TranscriptionTurn } from '../types';
 import { MicrophoneIcon } from './icons/Icons';
-import { STRINGS } from '../strings';
 
 // --- Helper Functions for Audio Encoding/Decoding ---
 
@@ -79,11 +79,11 @@ function createBlob(data: Float32Array): Blob {
   }
   return {
     data: encode(new Uint8Array(int16.buffer)),
-    mimeType: STRINGS.AUDIO_MIME_TYPE,
+    mimeType: 'audio/pcm;rate=16000',
   };
 }
 
-type Tone = typeof STRINGS.TONE_FRIENDLY | typeof STRINGS.TONE_PROFESSIONAL | typeof STRINGS.TONE_CREATIVE | typeof STRINGS.TONE_BOLD;
+type Tone = 'Friendly' | 'Professional' | 'Creative' | 'Bold';
 
 // --- Main Component ---
 
@@ -109,10 +109,10 @@ const AIAssistant: React.FC = () => {
     const [currentOutput, setCurrentOutput] = useState('');
     const [error, setError] = useState('');
 
-    const [selectedTone, setSelectedTone] = useState<Tone>(STRINGS.TONE_FRIENDLY);
+    const [selectedTone, setSelectedTone] = useState<Tone>('Friendly');
     const [customInstruction, setCustomInstruction] = useState('');
 
-    const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+    const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const inputAudioContextRef = useRef<AudioContext | null>(null);
     const outputAudioContextRef = useRef<AudioContext | null>(null);
@@ -162,30 +162,30 @@ const AIAssistant: React.FC = () => {
 
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-            let systemInstruction = STRINGS.SYSTEM_INSTRUCTION_BASE;
+            let systemInstruction = 'You are a career assistant for the Alpha Consortium platform.';
 
             switch (selectedTone) {
-                case STRINGS.TONE_PROFESSIONAL:
-                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_PROFESSIONAL;
+                case 'Professional':
+                    systemInstruction += ' Your tone should be formal, direct, and focused on providing clear, actionable advice.';
                     break;
-                case STRINGS.TONE_CREATIVE:
-                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_CREATIVE;
+                case 'Creative':
+                    systemInstruction += ' Your tone should be engaging, expressive, and use imaginative examples to help users think outside the box.';
                     break;
-                case STRINGS.TONE_BOLD:
-                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_BOLD;
+                case 'Bold':
+                    systemInstruction += ' Your tone should be confident, assertive, and motivational, pushing users to aim high.';
                     break;
-                case STRINGS.TONE_FRIENDLY:
+                case 'Friendly':
                 default:
-                    systemInstruction += STRINGS.SYSTEM_INSTRUCTION_FRIENDLY;
+                    systemInstruction += ' Your tone should be friendly, helpful, and conversational. Keep your answers concise.';
                     break;
             }
 
             if (customInstruction.trim()) {
-                systemInstruction += `${STRINGS.SYSTEM_INSTRUCTION_CUSTOM_PREFIX}${customInstruction.trim()}`;
+                systemInstruction += `\n\nAdditionally, follow this specific instruction: ${customInstruction.trim()}`;
             }
 
             const sessionPromise = ai.live.connect({
-                model: STRINGS.GEMINI_MODEL_ID,
+                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 callbacks: {
                     onopen: () => {
                         setConnectionState('connected');
@@ -222,8 +222,8 @@ const AIAssistant: React.FC = () => {
                             const fullOutput = currentOutputRef.current;
                              setTranscriptionHistory(prev => [
                                 ...prev,
-                                { speaker: STRINGS.SPEAKER_USER, text: fullInput },
-                                { speaker: STRINGS.SPEAKER_MODEL, text: fullOutput }
+                                { speaker: 'user', text: fullInput },
+                                { speaker: 'model', text: fullOutput }
                             ]);
                             currentInputRef.current = '';
                             currentOutputRef.current = '';
@@ -256,8 +256,8 @@ const AIAssistant: React.FC = () => {
                         }
                     },
                     onerror: (e: ErrorEvent) => {
-                        console.error(STRINGS.LOG_SESSION_ERROR, e);
-                        setError(STRINGS.ERROR_CONNECTION);
+                        console.error('Session error:', e);
+                        setError('A connection error occurred. Please try again.');
                         setConnectionState('error');
                         cleanup();
                     },
@@ -271,13 +271,16 @@ const AIAssistant: React.FC = () => {
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
                     systemInstruction: systemInstruction,
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
+                    }
                 },
             });
             sessionPromiseRef.current = sessionPromise;
 
         } catch (err) {
             console.error(err);
-            setError(STRINGS.ERROR_MICROPHONE);
+            setError('Could not access the microphone. Please grant permission and try again.');
             setConnectionState('error');
         }
     };
@@ -293,96 +296,93 @@ const AIAssistant: React.FC = () => {
     return (
         <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">{STRINGS.TITLE}</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">{STRINGS.SUBTITLE}</p>
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">AI Career Voice Assistant</h2>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Have a real-time voice conversation with our AI to get career advice, practice interviews, or learn about the Balkan job market.</p>
                 </div>
 
-                <div className="mt-12 bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-lg dark:shadow-none space-y-6">
-                    {!isConversationActive && (
-                        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-md border border-gray-200 dark:border-gray-700 animate-scale-in">
-                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{STRINGS.CUSTOMIZE_SECTION_TITLE}</h3>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {STRINGS.RESPONSE_TONE_LABEL}
-                                </label>
-                                <div role="radiogroup" className="flex flex-wrap gap-2">
-                                    {([STRINGS.TONE_FRIENDLY, STRINGS.TONE_PROFESSIONAL, STRINGS.TONE_CREATIVE, STRINGS.TONE_BOLD] as Tone[]).map(tone => (
-                                        <button
-                                            key={tone}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={selectedTone === tone}
-                                            onClick={() => setSelectedTone(tone)}
-                                            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors duration-200 ${
-                                                selectedTone === tone
-                                                ? 'bg-blue-600 text-white shadow'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                                            }`}
-                                        >
-                                            {tone}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                             <div>
-                                <label htmlFor="custom-instruction" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {STRINGS.CUSTOM_INSTRUCTION_LABEL}
-                                </label>
-                                <textarea
-                                    id="custom-instruction"
-                                    rows={2}
-                                    value={customInstruction}
-                                    onChange={(e) => setCustomInstruction(e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder={STRINGS.CUSTOM_INSTRUCTION_PLACEHOLDER}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <div 
-                        ref={chatLogRef} 
-                        role="log"
-                        aria-live="polite"
-                        aria-atomic="false"
-                        className="h-96 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-4"
-                    >
+                <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-blue-500/20 shadow-xl overflow-hidden flex flex-col h-[600px]">
+                    {/* Chat Log */}
+                    <div ref={chatLogRef} className="flex-1 overflow-y-auto p-6 space-y-4">
                         {transcriptionHistory.map((turn, index) => (
-                            <div key={index} className={`flex ${turn.speaker === STRINGS.SPEAKER_USER ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-md p-3 rounded-lg ${turn.speaker === STRINGS.SPEAKER_USER ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                            <div key={index} className={`flex ${turn.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                                    turn.speaker === 'user' 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                                }`}>
                                     <p>{turn.text}</p>
                                 </div>
                             </div>
                         ))}
-                        {currentInput && <div className="flex justify-end"><div className="max-w-md p-3 rounded-lg bg-blue-500 text-white opacity-70"><p>{currentInput}</p></div></div>}
-                        {currentOutput && <div className="flex justify-start"><div className="max-w-md p-3 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 opacity-70"><p>{currentOutput}</p></div></div>}
-                         {!isConversationActive && transcriptionHistory.length === 0 && (
-                             <div className="text-center text-gray-400 dark:text-gray-500 h-full flex items-center justify-center">
-                                {STRINGS.EMPTY_STATE_MESSAGE}
+                        {currentInput && (
+                            <div className="flex justify-end">
+                                <div className="max-w-[80%] rounded-2xl px-4 py-2 text-sm bg-blue-600/50 text-white animate-pulse">
+                                    <p>{currentInput}</p>
+                                </div>
                             </div>
-                         )}
+                        )}
+                        {currentOutput && (
+                            <div className="flex justify-start">
+                                <div className="max-w-[80%] rounded-2xl px-4 py-2 text-sm bg-gray-100/50 dark:bg-gray-700/50 text-gray-800 dark:text-gray-200 animate-pulse">
+                                    <p>{currentOutput}</p>
+                                </div>
+                            </div>
+                        )}
+                        {transcriptionHistory.length === 0 && !currentInput && !currentOutput && (
+                             <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 dark:text-gray-500 px-10">
+                                <MicrophoneIcon className="h-12 w-12 mb-4 opacity-20" />
+                                <p>Click the button below to start your conversation. You can ask about job trends, resume tips, or relocation advice.</p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex flex-col items-center justify-center gap-4">
-                         <div className="relative flex items-center justify-center w-24 h-24">
-                            <div className={`absolute inset-0 rounded-full bg-blue-500/20 ${connectionState === 'connected' ? 'animate-pulse' : ''}`}></div>
-                            <div className="relative w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md">
-                                <MicrophoneIcon className={`h-8 w-8 transition-colors ${connectionState === 'connected' ? 'text-blue-500' : 'text-gray-400'}`} />
+                    {/* Controls */}
+                    <div className="p-6 border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <div className="flex-1 w-full">
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Voice Tone</label>
+                                <div className="flex gap-2">
+                                    {(['Friendly', 'Professional', 'Creative', 'Bold'] as Tone[]).map(t => (
+                                        <button
+                                            key={t}
+                                            onClick={() => setSelectedTone(t)}
+                                            disabled={isConversationActive}
+                                            className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium border transition-all ${
+                                                selectedTone === t 
+                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex-shrink-0">
+                                {!isConversationActive ? (
+                                    <button
+                                        onClick={handleStartConversation}
+                                        className="inline-flex items-center justify-center rounded-full bg-blue-600 p-4 text-white shadow-lg hover:bg-blue-500 transition-all transform hover:scale-110 active:scale-95"
+                                        aria-label="Start Conversation"
+                                    >
+                                        <MicrophoneIcon className="h-8 w-8" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleEndConversation}
+                                        className="inline-flex items-center justify-center rounded-full bg-red-600 p-4 text-white shadow-lg hover:bg-red-500 transition-all transform hover:scale-110 active:scale-95 animate-pulse"
+                                        aria-label="End Conversation"
+                                    >
+                                        <div className="h-8 w-8 flex items-center justify-center">
+                                            <div className="w-4 h-4 bg-white rounded-sm"></div>
+                                        </div>
+                                    </button>
+                                )}
                             </div>
                         </div>
-                        {!isConversationActive ? (
-                            <button onClick={handleStartConversation} className="px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-md shadow-lg hover:bg-blue-700">
-                                {STRINGS.START_CONVERSATION}
-                            </button>
-                        ) : connectionState === 'connecting' ? (
-                            <span className="text-gray-500 dark:text-gray-400">{STRINGS.CONNECTING}</span>
-                        ) : (
-                            <button onClick={handleEndConversation} className="px-6 py-3 text-base font-semibold text-white bg-red-600 rounded-md shadow-lg hover:bg-red-700">
-                                {STRINGS.END_CONVERSATION}
-                            </button>
-                        )}
-                        {error && <p className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</p>}
+                        {error && <p className="mt-4 text-center text-xs text-red-500 font-medium">{error}</p>}
+                        {connectionState === 'connecting' && <p className="mt-4 text-center text-xs text-blue-500 font-medium animate-pulse">Establishing secure voice link...</p>}
                     </div>
                 </div>
             </div>

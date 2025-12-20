@@ -24,6 +24,12 @@ export const ClipboardIcon: React.FC<{ className?: string }> = (props) => (
   </svg>
 );
 
+export const ArrowPathIcon: React.FC<{ className?: string }> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+    </svg>
+);
+
 export const LightbulbIcon: React.FC<{ className?: string }> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21a2.25 2.25 0 002.25 2.25h.008a2.25 2.25 0 002.25-2.25h-4.5zM12 18h.008v.008H12V18zM12 2.25C6.477 2.25 2.25 6.477 2.25 12c0 2.92 1.19 5.56 3.083 7.53l.003.003.002.002.001.001h9.33c1.893-1.97 3.083-4.61 3.083-7.53C21.75 6.477 17.523 2.25 12 2.25z" />
@@ -150,7 +156,6 @@ export const ChevronRightIcon: React.FC<{ className?: string }> = (props) => (
     </svg>
 );
 
-// FIX: Added missing icon components.
 export const DocumentPlusIcon: React.FC<{ className?: string }> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3h-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />

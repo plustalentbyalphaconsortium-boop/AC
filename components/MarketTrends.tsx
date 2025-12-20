@@ -227,7 +227,7 @@ const MarketTrends: React.FC = () => {
                                     {analysis.keySkills && analysis.keySkills.length > 0 ? (
                                         <TrendBarChart 
                                             data={analysis.keySkills.map(s => ({ name: s.skill, value: s.demandScore }))} 
-                                            color="#f97316"
+                                            color="#3b82f6"
                                         />
                                     ) : (
                                         <p>No specific skills data available.</p>

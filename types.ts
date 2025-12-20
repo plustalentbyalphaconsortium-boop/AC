@@ -42,6 +42,12 @@ export interface Job {
   salaryMin?: number;
   salaryMax?: number;
   qualifications?: string;
+  postedDate?: string;
+  hiringOrganization?: {
+    name: string;
+    sameAs?: string;
+    logo?: string;
+  };
 }
 
 export interface JobAlertSubscription {

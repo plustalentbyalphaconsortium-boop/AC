@@ -21,6 +21,7 @@ import VibeCheck from './components/VibeCheck';
 import HRServices from './components/HRServices';
 import VisaTrack from './components/VisaTrack';
 import AITutorialAssistant from './components/AITutorialAssistant';
+import SEOManager from './components/SEOManager';
 import { View, Feature, AICommand, TutorialStep } from './types';
 import { 
     SparklesIcon, 
@@ -235,7 +236,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div className="bg-gray-50 dark:bg-[#0c0a18] min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      <SEOManager activeView={activeView} />
       <a 
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md shadow-lg"
