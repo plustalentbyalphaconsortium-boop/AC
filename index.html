@@ -16,37 +16,7 @@
       tailwind.config = {
         darkMode: 'class',
         theme: {
-          extend: {
-            colors: {
-              gray: {
-                50: '#fafaf9',
-                100: '#f5f5f4',
-                200: '#e7e5e4',
-                300: '#d6d3d1',
-                400: '#a8a29e',
-                500: '#78716c',
-                600: '#57534e',
-                700: '#44403c',
-                800: '#292524',
-                900: '#1c1917',
-                950: '#0c0a09',
-              },
-              // Replaced blue with warm orange palette
-              blue: {
-                50: '#fff7ed',
-                100: '#ffedd5',
-                200: '#fed7aa',
-                300: '#fdba74',
-                400: '#fb923c',
-                500: '#f97316',
-                600: '#ea580c',
-                700: '#c2410c',
-                800: '#9a3412',
-                900: '#7c2d12',
-                950: '#431407',
-              }
-            }
-          },
+          extend: {},
         }
       }
     </script>
@@ -58,28 +28,28 @@
         font-family: 'Poppins', sans-serif;
       }
       .dark body {
-        background-color: #0c0a09;
+        background-color: #0c0a18;
         background-image: 
-          radial-gradient(ellipse 80% 80% at 50% -20%,rgba(124, 45, 18, 0.3), rgba(255,255,255,0));
+          radial-gradient(ellipse 80% 80% at 50% -20%,rgba(33, 41, 92,0.5), rgba(255,255,255,0));
       }
       .font-orbitron {
         font-family: 'Orbitron', sans-serif;
       }
-      /* Warm Orange for WCAG 2.1 Contrast Compliance */
+      /* Darker color for WCAG 2.1 Contrast Compliance (4.5:1) */
       .neon-text {
-        color: #9a3412;
-        text-shadow: 0 0 1px rgba(249, 115, 22, 0.2);
+        color: #1e3a8a;
+        text-shadow: 0 0 1px rgba(65, 105, 225, 0.2);
       }
       .dark .neon-text {
         color: #fff;
         text-shadow:
-          0 0 5px rgba(253, 186, 116, 0.9),
-          0 0 10px rgba(253, 186, 116, 0.9),
-          0 0 20px rgba(249, 115, 22, 0.9);
+          0 0 5px rgba(173, 216, 230, 0.9),
+          0 0 10px rgba(173, 216, 230, 0.9),
+          0 0 20px rgba(65, 105, 225, 0.9);
       }
       .neon-border {
-         border-color: #f97316;
-         box-shadow: 0 0 3px rgba(249, 115, 22, 0.8), 0 0 6px rgba(249, 115, 22, 0.6);
+         border-color: #4169e1;
+         box-shadow: 0 0 3px rgba(65, 105, 225, 0.8), 0 0 6px rgba(65, 105, 225, 0.6);
       }
       .sr-only {
         position: absolute;
@@ -93,8 +63,8 @@
         border-width: 0;
       }
       @keyframes pulse-border {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-        50% { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(65, 105, 225, 0.4); }
+        50% { box-shadow: 0 0 0 4px rgba(65, 105, 225, 0); }
       }
       .animate-pulse-border {
         animation: pulse-border 1.5s infinite;

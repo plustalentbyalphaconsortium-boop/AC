@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
     };
 
     const statusData = [
-        { name: 'Applied', value: trackedJobs.filter(j => j.applicationStatus === 'Applied').length, color: '#f97316' },
+        { name: 'Applied', value: trackedJobs.filter(j => j.applicationStatus === 'Applied').length, color: '#3b82f6' },
         { name: 'Interviewing', value: trackedJobs.filter(j => j.applicationStatus === 'Interviewing').length, color: '#eab308' },
         { name: 'Offer Received', value: trackedJobs.filter(j => j.applicationStatus === 'Offer Received').length, color: '#22c55e' },
         { name: 'Rejected', value: trackedJobs.filter(j => j.applicationStatus === 'Rejected').length, color: '#ef4444' },
@@ -129,15 +129,15 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
                                 <div className="space-y-4">
                                     <div>
                                         <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                                        <input type="text" name="name" id="name" value={profile.name} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 dark:text-white" />
+                                        <input type="text" name="name" id="name" value={profile.name} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                     </div>
                                     <div>
                                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                                        <input type="email" name="email" id="email" value={profile.email} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 dark:text-white" />
+                                        <input type="email" name="email" id="email" value={profile.email} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                     </div>
                                     <div>
                                         <label htmlFor="masterResume" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Master Resume</label>
-                                        <textarea name="masterResume" id="masterResume" rows={8} value={profile.masterResume} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 dark:text-white" placeholder="Paste your full resume here to pre-fill future AI tools..."></textarea>
+                                        <textarea name="masterResume" id="masterResume" rows={8} value={profile.masterResume} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Paste your full resume here to pre-fill future AI tools..."></textarea>
                                     </div>
                                     <div className="flex justify-end gap-2">
                                          <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500">Cancel</button>

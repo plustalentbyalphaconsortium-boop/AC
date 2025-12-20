@@ -86,8 +86,8 @@ const VisaTrack: React.FC = () => {
                             disabled={isLoading}
                             className={`px-6 py-2 rounded-full border-2 transition-all ${
                                 selectedCountry === country 
-                                ? 'bg-orange-600 border-orange-600 text-white shadow-lg' 
-                                : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-orange-500'
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
+                                : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-500'
                             } disabled:opacity-50`}
                             aria-pressed={selectedCountry === country}
                         >
@@ -99,7 +99,7 @@ const VisaTrack: React.FC = () => {
                 <div className="mt-16" aria-live="polite">
                     {isLoading && (
                         <div className="flex flex-col items-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                             <p className="mt-4 text-gray-500">Consulting relocation experts...</p>
                         </div>
                     )}
@@ -112,20 +112,20 @@ const VisaTrack: React.FC = () => {
 
                     {roadmap && (
                         <div className="space-y-8 animate-scale-in">
-                            <section className="bg-white dark:bg-gray-800/30 p-8 rounded-xl border border-orange-500/20 shadow-xl">
+                            <section className="bg-white dark:bg-gray-800/30 p-8 rounded-xl border border-blue-500/20 shadow-xl">
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-                                    <RocketLaunchIcon className="h-6 w-6 text-orange-500" />
+                                    <RocketLaunchIcon className="h-6 w-6 text-blue-500" />
                                     Your {roadmap.country} Relocation Roadmap
                                 </h3>
                                 
                                 <div className="space-y-12">
                                     {roadmap.steps.map((step, idx) => (
-                                        <div key={idx} className="relative pl-8 border-l-2 border-orange-500/30 last:border-l-0">
-                                            <div className="absolute -left-[11px] top-0 w-5 h-5 rounded-full bg-orange-600 border-4 border-white dark:border-[#0c0a18]"></div>
+                                        <div key={idx} className="relative pl-8 border-l-2 border-blue-500/30 last:border-l-0">
+                                            <div className="absolute -left-[11px] top-0 w-5 h-5 rounded-full bg-blue-600 border-4 border-white dark:border-[#0c0a18]"></div>
                                             <h4 className="text-lg font-bold text-gray-800 dark:text-white">{step.title}</h4>
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{step.description}</p>
                                             <div className="mt-3">
-                                                <h5 className="text-xs font-bold uppercase text-orange-500 mb-2">Documents Needed:</h5>
+                                                <h5 className="text-xs font-bold uppercase text-blue-500 mb-2">Documents Needed:</h5>
                                                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                     {step.documentsNeeded.map((doc, dIdx) => (
                                                         <li key={dIdx} className="text-sm flex items-center gap-2 text-gray-600 dark:text-gray-300">
@@ -141,9 +141,9 @@ const VisaTrack: React.FC = () => {
                             </section>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-orange-500/20">
+                                <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-blue-500/20">
                                     <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                                        <MapPinIcon className="h-5 w-5 text-orange-500" />
+                                        <MapPinIcon className="h-5 w-5 text-blue-500" />
                                         Cultural Integration
                                     </h4>
                                     <ul className="space-y-3">
@@ -152,9 +152,9 @@ const VisaTrack: React.FC = () => {
                                         ))}
                                     </ul>
                                 </div>
-                                <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-orange-500/20">
+                                <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-blue-500/20">
                                     <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                                        <ClipboardIcon className="h-5 w-5 text-orange-500" />
+                                        <ClipboardIcon className="h-5 w-5 text-blue-500" />
                                         Visa Interview Prep
                                     </h4>
                                     <ul className="space-y-3">

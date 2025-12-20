@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription } from '../types';
 import { getJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
@@ -16,6 +16,7 @@ const STATUS_STYLES: { [key in ApplicationStatus]: string } = {
 };
 
 const APPLICATION_STATUSES: ApplicationStatus[] = ['Applied', 'Interviewing', 'Offer Received', 'Rejected'];
+const JOB_TYPES = ['All', 'Full-time', 'Part-time', 'Contract'];
 
 const highlightMatches = (text: string, searchTerm: string | undefined): React.ReactNode => {
     if (!text) return text;
@@ -118,7 +119,7 @@ const JobCard: React.FC<{
 
 
     return (
-        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none">
+        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none animate-scale-in">
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{highlightedTitle}</h3>
@@ -308,6 +309,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
     const [activeCategory, setActiveCategory] = useState(initialCategory);
     const [activeStatusFilter, setActiveStatusFilter] = useState('All');
+    const [activeTypeFilter, setActiveTypeFilter] = useState('All');
     const [minSalaryFilter, setMinSalaryFilter] = useState<number | null>(null);
     const [applyingForJob, setApplyingForJob] = useState<Job | null>(null);
     const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -382,17 +384,21 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             const prompt = `
-                You are a smart job search assistant. Parse the following natural language query into search filters.
+                You are a smart job search assistant for the "Alpha Consortium" platform. 
+                Your task is to parse a natural language job search query into structured filters.
+                
                 Available categories: ${JOB_CATEGORIES.join(', ')}.
+                Available types: ${JOB_TYPES.slice(1).join(', ')}.
                 
                 Query: "${aiQuery}"
 
-                Output a JSON object with:
-                - searchTerm: (string) The core keywords for searching title or location.
-                - category: (string) Must be one of the available categories. Default to "All".
-                - minSalary: (number or null) Minimum salary if mentioned (e.g., "$90k" -> 90000).
-                
-                Only return the JSON.
+                Instructions:
+                - searchTerm: Keywords for title or location (e.g., "Europe", "Manager").
+                - category: Must exactly match one from the list. Default to "All".
+                - minSalary: Numeric minimum (e.g., "$90k" -> 90000). Use null if not mentioned.
+                - jobType: Must exactly match one of [Full-time, Part-time, Contract]. Default to "All".
+
+                Output only a valid JSON object.
             `;
 
             const response = await ai.models.generateContent({
@@ -405,9 +411,10 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                         properties: {
                             searchTerm: { type: Type.STRING },
                             category: { type: Type.STRING },
-                            minSalary: { type: Type.NUMBER, nullable: true }
+                            minSalary: { type: Type.NUMBER, nullable: true },
+                            jobType: { type: Type.STRING }
                         },
-                        required: ["searchTerm", "category", "minSalary"]
+                        required: ["searchTerm", "category", "minSalary", "jobType"]
                     }
                 }
             });
@@ -416,11 +423,14 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
             setSearchTerm(result.searchTerm);
             setActiveCategory(result.category);
             setMinSalaryFilter(result.minSalary);
-            setAiFeedback(`Applied filters for "${result.searchTerm}" in ${result.category}${result.minSalary ? ` with salary > $${result.minSalary.toLocaleString()}` : ''}`);
+            setActiveTypeFilter(result.jobType);
+            
+            const feedbackText = `Applied filters: "${result.searchTerm}" in ${result.category} (${result.jobType})${result.minSalary ? ` > $${result.minSalary.toLocaleString()}` : ''}`;
+            setAiFeedback(feedbackText);
             setAiQuery('');
         } catch (err) {
             console.error("AI Search Failed:", err);
-            setAiFeedback("Sorry, I couldn't process that request. Try standard search!");
+            setAiFeedback("Sorry, I couldn't process that query. Try standard filters!");
         } finally {
             setIsAiLoading(false);
         }
@@ -559,13 +569,14 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const filteredJobs = useMemo(() => {
         const preFilteredJobs = allJobs.filter(job => {
             const matchesCategory = activeCategory === 'All' || job.category === activeCategory;
+            const matchesType = activeTypeFilter === 'All' || job.type === activeTypeFilter;
             const matchesStatus = (() => {
                 if (activeStatusFilter === 'All') return true;
                 if (activeStatusFilter === 'Tracked') return job.applicationStatus !== undefined;
                 return job.applicationStatus === activeStatusFilter;
             })();
             const matchesSalary = minSalaryFilter ? (job.salaryMax || 0) >= minSalaryFilter : true;
-            return matchesCategory && matchesStatus && matchesSalary;
+            return matchesCategory && matchesType && matchesStatus && matchesSalary;
         });
 
         if (!searchTerm.trim()) {
@@ -581,7 +592,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
             .sort((a, b) => b.score - a.score);
             
         return scoredJobs.map(item => item.job);
-    }, [allJobs, activeCategory, searchTerm, activeStatusFilter, minSalaryFilter]);
+    }, [allJobs, activeCategory, activeTypeFilter, searchTerm, activeStatusFilter, minSalaryFilter]);
     
     const resultsCount = filteredJobs.length;
     const resultsText = `${resultsCount} job${resultsCount !== 1 ? 's' : ''} found.`;
@@ -631,81 +642,93 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                     <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Browse thousands of jobs from top companies and track your applications.</p>
                 </div>
 
-                {/* AI-Powered Search Section */}
+                {/* AI-Powered Magic Search */}
                 <div className="mt-12 max-w-4xl mx-auto">
-                    <div className={`relative p-1 rounded-xl transition-all duration-500 ${isAiLoading ? 'animate-pulse-border bg-gradient-to-r from-blue-500 via-orange-500 to-yellow-500' : 'bg-gray-200 dark:bg-gray-700/50'}`}>
+                    <div className={`relative p-1 rounded-xl transition-all duration-500 ${isAiLoading ? 'animate-pulse-border bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500' : 'bg-gray-200 dark:bg-gray-700/50 shadow-sm'}`}>
                         <div className="bg-white dark:bg-gray-900 rounded-lg flex items-center p-2 gap-2">
                             <div className="flex-shrink-0 pl-3">
-                                <SparklesIcon className={`h-6 w-6 ${isAiLoading ? 'text-orange-500 animate-bounce' : 'text-orange-500'}`} />
+                                <SparklesIcon className={`h-6 w-6 ${isAiLoading ? 'text-purple-500 animate-bounce' : 'text-blue-500'}`} />
                             </div>
                             <input
                                 type="text"
                                 value={aiQuery}
                                 onChange={(e) => setAiQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAiSearch()}
-                                placeholder="Magic Search: 'Find remote sales roles above $80k'..."
+                                placeholder="Magic Search: 'find remote marketing jobs in Europe above $90k'..."
                                 className="flex-grow bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm py-3 px-2"
                                 disabled={isAiLoading}
                             />
                             <button
                                 onClick={handleAiSearch}
                                 disabled={isAiLoading || !aiQuery.trim()}
-                                className="bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
                             >
                                 {isAiLoading ? 'Analyzing...' : 'Magic Search'}
                             </button>
                         </div>
                     </div>
                     {aiFeedback && (
-                        <p className={`mt-2 text-xs font-medium text-center animate-scale-in ${aiFeedback.includes('Applied') ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                            {aiFeedback}
-                            {aiFeedback.includes('Applied') && (
-                                <button onClick={() => { setSearchTerm(''); setActiveCategory('All'); setMinSalaryFilter(null); setAiFeedback(''); }} className="ml-2 underline text-gray-500">Reset</button>
-                            )}
-                        </p>
+                        <div className="mt-3 flex justify-center">
+                            <p className={`text-xs font-medium px-4 py-1.5 rounded-full animate-scale-in border ${aiFeedback.includes('Applied') ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-200 text-red-500'}`}>
+                                {aiFeedback}
+                                {aiFeedback.includes('Applied') && (
+                                    <button onClick={() => { setSearchTerm(''); setActiveCategory('All'); setMinSalaryFilter(null); setActiveTypeFilter('All'); setAiFeedback(''); }} className="ml-2 underline opacity-70 hover:opacity-100">Reset</button>
+                                )}
+                            </p>
+                        </div>
                     )}
                 </div>
                 
-                <div className="mt-8 max-w-4xl mx-auto space-y-6">
+                <div className="mt-12 max-w-4xl mx-auto space-y-8">
+                    {/* Standard Keyword Search */}
                     <div className="relative" data-tutorial-id="job-search-input">
-                         <label htmlFor="job-search-input" className="sr-only">Search keywords, job titles, companies, or locations</label>
+                         <label htmlFor="job-search-input" className="sr-only">Search keywords, titles, or locations</label>
                          <input
                             id="job-search-input"
                             type="text"
                             placeholder="Standard search keywords..."
                             value={searchTerm}
                             onChange={(e) => { setSearchTerm(e.target.value); setAiFeedback(''); }}
-                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
                         />
                          <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                         </div>
                     </div>
                     
-                    <FilterButtonGroup 
-                        legend="Filter by Category"
-                        items={JOB_CATEGORIES}
-                        activeItem={activeCategory}
-                        onItemSelect={setActiveCategory}
-                        tutorialId="job-category-filter"
-                    />
-
-                    <div className="flex flex-col sm:flex-row justify-center gap-8">
-                        <FilterButtonGroup
-                            legend="Filter by Application Status"
-                            items={STATUS_FILTERS}
-                            activeItem={activeStatusFilter}
-                            onItemSelect={setActiveStatusFilter}
-                            tutorialId="job-status-filter"
+                    {/* Filter Section */}
+                    <div className="space-y-6">
+                        <FilterButtonGroup 
+                            legend="Job Category"
+                            items={JOB_CATEGORIES}
+                            activeItem={activeCategory}
+                            onItemSelect={setActiveCategory}
+                            tutorialId="job-category-filter"
                         />
+
+                        <div className="flex flex-col md:flex-row justify-center gap-8 md:gap-16">
+                            <FilterButtonGroup
+                                legend="Job Type"
+                                items={JOB_TYPES}
+                                activeItem={activeTypeFilter}
+                                onItemSelect={setActiveTypeFilter}
+                            />
+                            <FilterButtonGroup
+                                legend="Application Tracking"
+                                items={STATUS_FILTERS}
+                                activeItem={activeStatusFilter}
+                                onItemSelect={setActiveStatusFilter}
+                                tutorialId="job-status-filter"
+                            />
+                        </div>
+
                         {minSalaryFilter !== null && (
-                            <div className="flex flex-col items-center">
-                                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Salary Minimum</span>
+                            <div className="flex justify-center">
                                 <button 
                                     onClick={() => setMinSalaryFilter(null)}
-                                    className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-red-100 transition-colors group"
+                                    className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 hover:bg-red-100 transition-colors group border border-green-200 dark:border-green-800"
                                 >
-                                    ${minSalaryFilter.toLocaleString()}+ 
+                                    Min Salary: ${minSalaryFilter.toLocaleString()}+ 
                                     <TrashIcon className="h-3 w-3 group-hover:text-red-500" />
                                 </button>
                             </div>
@@ -713,15 +736,16 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                     </div>
                 </div>
 
+                {/* Job Alerts Section */}
                 <div className="mt-12 max-w-4xl mx-auto">
-                    <div className="bg-orange-50 dark:bg-orange-900/30 backdrop-blur-sm p-4 rounded-lg border border-orange-200 dark:border-orange-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm p-4 rounded-lg border border-blue-200 dark:border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
                         <div className="flex items-center gap-3">
-                            <BellIcon className="h-6 w-6 text-orange-500 dark:text-orange-300 flex-shrink-0" aria-hidden="true" />
+                            <BellIcon className="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" aria-hidden="true" />
                             <div>
-                                <h4 className="font-semibold text-orange-800 dark:text-orange-200">Job Alerts</h4>
-                                <p className="text-orange-700 dark:text-orange-300/90 text-sm">
+                                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Job Alerts</h4>
+                                <p className="text-blue-700 dark:text-blue-300/90 text-sm">
                                     {currentAlert 
-                                        ? `You have an active alert for this search.`
+                                        ? `Active alert set for "${searchTerm}" in ${activeCategory}.`
                                         : `Get notified when new jobs match your criteria.`
                                     }
                                 </p>
@@ -731,16 +755,14 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                              {currentAlert ? (
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
-                                    aria-label="Manage all active job alerts"
-                                    className="px-4 py-2 text-sm font-medium text-orange-700 dark:text-orange-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-orange-300 dark:border-orange-500/50"
+                                    className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
                                 >
                                     Manage Alerts
                                 </button>
                              ) : (
                                 <button
                                     onClick={() => setIsAlertModalOpen(true)}
-                                    aria-label="Create a job alert for the current search criteria"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-500 transition-colors duration-200"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-colors duration-200 shadow-sm"
                                 >
                                     Create Alert
                                 </button>
@@ -748,23 +770,22 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                               {subscriptions.length > 0 && !currentAlert && (
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
-                                    aria-label={`Manage your ${subscriptions.length} job alerts`}
-                                    className="px-4 py-2 text-sm font-medium text-orange-700 dark:text-orange-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-orange-300 dark:border-orange-500/50"
+                                    className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
                                 >
-                                    Manage Alerts ({subscriptions.length})
+                                    All Alerts ({subscriptions.length})
                                 </button>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-12">
+                <div className="mt-16">
                     <div className="sr-only" aria-live="polite" aria-atomic="true">
                         {!isLoading && resultsText}
                     </div>
                      {!isLoading && !error && (
-                        <div className="text-center mb-6">
-                            <p className="text-md font-medium text-gray-700 dark:text-gray-300" aria-hidden="true">
+                        <div className="text-center mb-10">
+                            <p className="text-lg font-semibold text-gray-700 dark:text-gray-300" aria-hidden="true">
                                 {resultsText}
                             </p>
                         </div>
