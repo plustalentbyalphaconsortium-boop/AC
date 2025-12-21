@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription } from '../types';
 import { getJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
@@ -447,7 +447,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
     const currentAlert = useMemo(() => {
         return subscriptions.find(sub => 
-            sub.keywords.toLowerCase() === searchTerm.toLowerCase() &&
+            sub.keywords.toLowerCase() === searchTerm.toLowerCase().trim() &&
             sub.category === activeCategory
         );
     }, [subscriptions, searchTerm, activeCategory]);
@@ -738,14 +738,24 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
                 {/* Job Alerts Section */}
                 <div className="mt-12 max-w-4xl mx-auto">
-                    <div className="bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm p-4 rounded-lg border border-blue-200 dark:border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                    <div className={`bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm p-4 rounded-lg border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-all duration-500 ${currentAlert ? 'border-green-400 dark:border-green-500 shadow-green-500/20' : 'border-blue-200 dark:border-blue-500/20'}`}>
                         <div className="flex items-center gap-3">
-                            <BellIcon className="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" aria-hidden="true" />
+                            <div className="relative">
+                                <BellIcon className={`h-6 w-6 flex-shrink-0 ${currentAlert ? 'text-green-500 dark:text-green-400 animate-bounce' : 'text-blue-500 dark:text-blue-300'}`} aria-hidden="true" />
+                                {currentAlert && (
+                                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                    </span>
+                                )}
+                            </div>
                             <div>
-                                <h4 className="font-semibold text-blue-800 dark:text-blue-200">Job Alerts</h4>
-                                <p className="text-blue-700 dark:text-blue-300/90 text-sm">
+                                <h4 className={`font-semibold ${currentAlert ? 'text-green-800 dark:text-green-200' : 'text-blue-800 dark:text-blue-200'}`}>
+                                    {currentAlert ? 'Active Search Alert' : 'Job Search Alerts'}
+                                </h4>
+                                <p className={`${currentAlert ? 'text-green-700 dark:text-green-300/90' : 'text-blue-700 dark:text-blue-300/90'} text-sm`}>
                                     {currentAlert 
-                                        ? `Active alert set for "${searchTerm}" in ${activeCategory}.`
+                                        ? `You're tracking "${searchTerm || 'All'}" in ${activeCategory}.`
                                         : `Get notified when new jobs match your criteria.`
                                     }
                                 </p>
@@ -755,16 +765,16 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                              {currentAlert ? (
                                 <button 
                                     onClick={() => setIsManageAlertsModalOpen(true)}
-                                    className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-200 bg-white dark:bg-gray-700/50 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 border border-blue-300 dark:border-blue-500/50"
+                                    className="px-4 py-2 text-sm font-medium text-green-700 dark:text-green-200 bg-white dark:bg-green-800/20 rounded-md hover:bg-green-50 dark:hover:bg-green-800/40 border border-green-300 dark:border-green-500/50 flex items-center gap-1.5"
                                 >
-                                    Manage Alerts
+                                    <CheckCircleIcon className="h-4 w-4" /> Manage Alert
                                 </button>
                              ) : (
                                 <button
                                     onClick={() => setIsAlertModalOpen(true)}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-colors duration-200 shadow-sm"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-colors duration-200 shadow-sm flex items-center gap-1.5"
                                 >
-                                    Create Alert
+                                    <BellIcon className="h-4 w-4" /> Create Alert
                                 </button>
                              )}
                               {subscriptions.length > 0 && !currentAlert && (
@@ -784,10 +794,18 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                         {!isLoading && resultsText}
                     </div>
                      {!isLoading && !error && (
-                        <div className="text-center mb-10">
+                        <div className="text-center mb-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                             <p className="text-lg font-semibold text-gray-700 dark:text-gray-300" aria-hidden="true">
                                 {resultsText}
                             </p>
+                            {searchTerm && !currentAlert && (
+                                <button 
+                                    onClick={() => setIsAlertModalOpen(true)}
+                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800"
+                                >
+                                    <BellIcon className="h-3 w-3" /> Save this search
+                                </button>
+                            )}
                         </div>
                     )}
                     {renderContent()}

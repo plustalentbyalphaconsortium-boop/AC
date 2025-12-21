@@ -134,6 +134,12 @@ export interface HRService {
 export interface MarketTrendAnalysis {
     demandOutlook: string;
     salaryInsights: string;
+    salaryData?: {
+        entryLevel: number;
+        midLevel: number;
+        seniorLevel: number;
+        currency: string;
+    };
     keySkills: { skill: string; demandScore: number }[];
     emergingTrends: string;
     geographicHotspots: { location: string; demandIndex: number }[];

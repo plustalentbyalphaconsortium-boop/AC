@@ -60,6 +60,41 @@ const TrendBarChart: React.FC<{ data: { name: string; value: number }[]; color: 
     );
 }
 
+const SalaryChart: React.FC<{ data: { name: string; value: number }[]; currency: string }> = ({ data, currency }) => {
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, maximumSignificantDigits: 3 }).format(value);
+    };
+
+    return (
+        <div className="h-64 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.1} />
+                    <XAxis dataKey="name" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis 
+                        tickFormatter={(value) => formatCurrency(value)} 
+                        tick={{ fill: '#6B7280', fontSize: 11 }} 
+                        axisLine={false} 
+                        tickLine={false}
+                        width={60}
+                    />
+                    <Tooltip 
+                        cursor={{fill: 'transparent'}}
+                        formatter={(value: number) => [formatCurrency(value), 'Average Salary']}
+                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                        itemStyle={{ color: '#1f2937' }}
+                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1500}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={index === 0 ? '#60a5fa' : index === 1 ? '#3b82f6' : '#1d4ed8'} />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
 const MarketTrends: React.FC = () => {
     const [query, setQuery] = useState('');
     const [analysis, setAnalysis] = useState<MarketTrendAnalysis | null>(null);
@@ -94,7 +129,7 @@ const MarketTrends: React.FC = () => {
 
                 Provide insights on the following five key areas:
                 1.  **Demand Outlook:** Is the demand for this role growing, stable, or declining?
-                2.  **Salary Insights:** What are the typical salary ranges for entry-level and senior positions in the US? Provide a general range in USD, like "$60,000 - $90,000".
+                2.  **Salary Insights:** What are the typical annual salaries for Entry-Level, Mid-Level, and Senior-Level positions in the US (or relevant global market)? Provide a general range text summary, AND specific estimated averages for the data structure.
                 3.  **Key Skills in Demand:** What are the top 5-7 most crucial skills? For each, assign a relative "demandScore" from 1 to 100 representing its importance.
                 4.  **Emerging Trends:** What new technologies or trends are shaping this field?
                 5.  **Geographic Hotspots:** Which 3-5 cities or regions have the highest demand? For each, assign a relative "demandIndex" from 1 to 100.
@@ -104,6 +139,7 @@ const MarketTrends: React.FC = () => {
                 {
                   "demandOutlook": "string",
                   "salaryInsights": "string",
+                  "salaryData": { "entryLevel": number, "midLevel": number, "seniorLevel": number, "currency": "string" },
                   "keySkills": [{ "skill": "string", "demandScore": number }],
                   "emergingTrends": "string",
                   "geographicHotspots": [{ "location": "string", "demandIndex": number }]
@@ -221,7 +257,17 @@ const MarketTrends: React.FC = () => {
                                     <p>{analysis.demandOutlook}</p>
                                 </AnalysisCard>
                                 <AnalysisCard icon={CurrencyDollarIcon} title="Salary Insights">
-                                    <p>{analysis.salaryInsights}</p>
+                                    <p className="mb-4">{analysis.salaryInsights}</p>
+                                    {analysis.salaryData && (
+                                        <SalaryChart 
+                                            data={[
+                                                { name: 'Entry', value: analysis.salaryData.entryLevel },
+                                                { name: 'Mid', value: analysis.salaryData.midLevel },
+                                                { name: 'Senior', value: analysis.salaryData.seniorLevel },
+                                            ]}
+                                            currency={analysis.salaryData.currency}
+                                        />
+                                    )}
                                 </AnalysisCard>
                                 <AnalysisCard icon={WrenchScrewdriverIcon} title="Key Skills in Demand">
                                     {analysis.keySkills && analysis.keySkills.length > 0 ? (
