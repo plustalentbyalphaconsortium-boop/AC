@@ -23,7 +23,7 @@ const ServiceCard: React.FC<{ service: HRService }> = ({ service }) => {
     <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-lg dark:shadow-none">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">
-          <Icon className="h-6 w-6" aria-hidden="true" />
+          {Icon ? <Icon className="h-6 w-6" aria-hidden="true" /> : <div className="h-6 w-6 bg-blue-200/50 rounded-full" />}
         </div>
         <div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">{service.title}</h3>

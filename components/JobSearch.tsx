@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
-import { Job, ApplicationStatus, JobAlertSubscription } from '../types';
+import { Job, ApplicationStatus, JobAlertSubscription, UserProfile } from '../types';
 import { getJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ChartBarIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
@@ -60,7 +60,8 @@ const JobCard: React.FC<{
     onClear: (id: number) => void;
     onApplyNow: (job: Job) => void;
     searchTerm?: string;
-}> = ({ job, onUpdate, onClear, onApplyNow, searchTerm }) => {
+    userProfile: UserProfile | null;
+}> = ({ job, onUpdate, onClear, onApplyNow, searchTerm, userProfile }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [notes, setNotes] = useState(job.notes || '');
     const [status, setStatus] = useState(job.applicationStatus);
@@ -68,6 +69,10 @@ const JobCard: React.FC<{
     const applyButtonRef = useRef<HTMLButtonElement>(null);
     const statusSelectRef = useRef<HTMLSelectElement>(null);
     const isInitialRender = useRef(true);
+
+    // AI Match State
+    const [matchAnalysis, setMatchAnalysis] = useState<{ score: number; reason: string } | null>(null);
+    const [isAnalyzingMatch, setIsAnalyzingMatch] = useState(false);
 
     const isTracked = job.applicationStatus !== undefined;
     const [wasTracked, setWasTracked] = useState(isTracked);
@@ -112,16 +117,73 @@ const JobCard: React.FC<{
         onClear(job.id);
         setIsEditing(false);
     }
+
+    const handleAnalyzeMatch = async () => {
+        if (!userProfile?.masterResume) return;
+        setIsAnalyzingMatch(true);
+        setMatchAnalysis(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const prompt = `
+                Act as a career matching expert. Compare the following Candidate Profile with the Job Description.
+                
+                **Candidate Resume:**
+                ${userProfile.masterResume.substring(0, 3000)}... (truncated for brevity if too long)
+
+                **Job Description:**
+                Title: ${job.title}
+                Company: ${job.company}
+                Description: ${job.description}
+                Qualifications: ${job.qualifications || ''}
+
+                **Task:**
+                1. Calculate a compatibility score from 0 to 100 based on skills, experience, and role alignment.
+                2. Provide a concise, 1-sentence reason explaining the score (e.g., "Strong skill match but lacks leadership experience.").
+
+                Return JSON: { "score": number, "reason": "string" }
+            `;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            score: { type: Type.NUMBER },
+                            reason: { type: Type.STRING }
+                        },
+                        required: ['score', 'reason']
+                    }
+                }
+            });
+
+            const result = JSON.parse(response.text);
+            setMatchAnalysis(result);
+
+        } catch (error) {
+            console.error("Match analysis failed:", error);
+        } finally {
+            setIsAnalyzingMatch(false);
+        }
+    };
     
     const highlightedTitle = useMemo(() => highlightMatches(job.title, searchTerm), [job.title, searchTerm]);
     const highlightedCompany = useMemo(() => highlightMatches(job.company, searchTerm), [job.company, searchTerm]);
     const highlightedDescription = useMemo(() => highlightMatches(job.description, searchTerm), [job.description, searchTerm]);
 
+    const getMatchColor = (score: number) => {
+        if (score >= 80) return 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+        if (score >= 50) return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
+        return 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+    };
 
     return (
-        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none animate-scale-in">
+        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none animate-scale-in relative">
             <div className="flex justify-between items-start">
-                <div>
+                <div className="pr-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{highlightedTitle}</h3>
                     <p className="text-sm text-blue-600 dark:text-blue-300">{highlightedCompany}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -133,7 +195,7 @@ const JobCard: React.FC<{
                         )}
                     </p>
                 </div>
-                 <div className="flex flex-col items-end gap-2">
+                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                     <span className="text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300 px-2 py-1 rounded-full">{job.type}</span>
                     {isTracked && (
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[job.applicationStatus!]}`}>
@@ -142,10 +204,34 @@ const JobCard: React.FC<{
                     )}
                 </div>
             </div>
+
+            {/* AI Match Section */}
+            <div className="mt-3 min-h-[2rem]">
+                {matchAnalysis ? (
+                    <div className={`p-2 rounded-md border flex items-start gap-2 ${getMatchColor(matchAnalysis.score)} animate-scale-in`}>
+                        <div className="flex-shrink-0 font-bold text-lg">{matchAnalysis.score}%</div>
+                        <div className="text-xs leading-snug">{matchAnalysis.reason}</div>
+                    </div>
+                ) : userProfile?.masterResume ? (
+                    <button 
+                        onClick={handleAnalyzeMatch}
+                        disabled={isAnalyzingMatch}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full border border-purple-200 dark:border-purple-800 transition-colors disabled:opacity-50"
+                    >
+                        {isAnalyzingMatch ? (
+                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        ) : (
+                            <SparklesIcon className="h-3 w-3" />
+                        )}
+                        {isAnalyzingMatch ? 'Analyzing Fit...' : 'Analyze Match'}
+                    </button>
+                ) : null}
+            </div>
+
             {job.qualifications && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700/50">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Qualifications</h4>
-                    <p className="mt-2 text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap font-mono text-xs">{job.qualifications}</p>
+                    <p className="mt-1 text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap font-mono text-xs">{job.qualifications}</p>
                 </div>
             )}
             <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm flex-grow">{highlightedDescription}</p>
@@ -315,6 +401,9 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
     const [isManageAlertsModalOpen, setIsManageAlertsModalOpen] = useState(false);
     
+    // User Profile for matching
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    
     // AI Magic Search State
     const [aiQuery, setAiQuery] = useState('');
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -361,6 +450,14 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
     useEffect(() => {
         fetchAndMergeJobs();
+        try {
+            const savedProfile = localStorage.getItem('userProfile');
+            if (savedProfile) {
+                setUserProfile(JSON.parse(savedProfile));
+            }
+        } catch (e) {
+            console.error("Failed to load user profile", e);
+        }
     }, []);
 
     useEffect(() => {
@@ -623,7 +720,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                 <h3 id="job-results-heading" className="sr-only">Job Search Results</h3>
                 <ul data-tutorial-id="job-results-list" aria-labelledby="job-results-heading" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredJobs.length > 0 ? (
-                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} searchTerm={searchTerm} />)
+                        filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} searchTerm={searchTerm} userProfile={userProfile} />)
                     ) : (
                         <li className="text-gray-500 dark:text-gray-400 col-span-full text-center py-10">
                             <p>No jobs found matching your criteria.</p>

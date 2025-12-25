@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Course } from '../types';
 import { getCourses } from '../api';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 
 const CourseCardSkeleton: React.FC = () => (
     <div className="p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 text-center animate-pulse">
@@ -56,7 +56,7 @@ const CourseCard: React.FC<{ course: Course }> = ({ course }) => {
       enrollmentStatus === 'enrolling' ? 'animate-pulse-border scale-[0.98]' : ''
     }`}>
       <div className={`mb-4 inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 transition-transform duration-300 group-hover:scale-110 ${enrollmentStatus === 'enrolled' ? 'animate-celebratory-bounce' : ''}`}>
-        <Icon className="h-6 w-6" aria-hidden="true" />
+        {Icon ? <Icon className="h-6 w-6" aria-hidden="true" /> : <span className="h-6 w-6 block bg-gray-200 rounded-full"></span>}
       </div>
       <h3 className="text-lg font-bold text-gray-900 dark:text-white">{course.title}</h3>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 flex-grow">{course.description}</p>
@@ -86,36 +86,83 @@ const Academy: React.FC = () => {
             setIsLoading(true);
             setError(null);
             
+            // 1. Get basic course data
             const initialCourses = await getCourses();
+
+            // 2. Check Cache
+            const cachedData = localStorage.getItem('academyCoursesCache');
+            if (cachedData) {
+                const { timestamp, courses: cachedCourses } = JSON.parse(cachedData);
+                const isRecent = (Date.now() - timestamp) < 24 * 60 * 60 * 1000; // 24 hours cache
+                
+                if (isRecent && cachedCourses.length === initialCourses.length) {
+                    // Restore icons since they can't be JSON serialized
+                    const hydratedCourses = cachedCourses.map((c: any, index: number) => ({
+                        ...c,
+                        icon: initialCourses[index].icon 
+                    }));
+                    setCourses(hydratedCourses);
+                    setIsLoading(false);
+                    return;
+                }
+            }
             
+            // 3. If no cache or stale, call AI API (Batched)
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-            const enhancementPromises = initialCourses.map(async (course) => {
-                const prompt = `
-                    Act as a professional and inspiring course catalog copywriter.
-                    Based on the following course title and brief description, write a new, more engaging, and detailed description of about 3-4 sentences.
-                    The tone should be motivational, highlighting the key benefits, skills gained, and potential career impact for the learner.
-                    Do not just repeat the input. Output only the new description text.
+            const prompt = `
+                Act as a professional course catalog copywriter.
+                I have a list of courses. For each course, write a new, engaging description (3-4 sentences).
+                The tone should be motivational, highlighting benefits and career impact.
+                
+                Input Courses:
+                ${JSON.stringify(initialCourses.map(c => ({ id: c.id, title: c.title, originalDescription: c.description })))}
 
-                    **Course Title:** ${course.title}
-                    **Brief Description:** ${course.description}
-                `;
-                try {
-                    const response: GenerateContentResponse = await ai.models.generateContent({
-                        model: 'gemini-2.5-flash',
-                        contents: prompt,
-                    });
-                    // Create a new course object with the enhanced description
-                    return { ...course, description: response.text };
-                } catch (e) {
-                    console.error(`Failed to enhance description for "${course.title}":`, e);
-                    // On failure, return the original course object
-                    return course;
-                }
-            });
+                Output a JSON array where each object has 'id' and 'newDescription'.
+            `;
 
-            const enhancedCourses = await Promise.all(enhancementPromises);
-            setCourses(enhancedCourses);
+            try {
+                const response: GenerateContentResponse = await ai.models.generateContent({
+                    model: 'gemini-3-flash-preview',
+                    contents: prompt,
+                    config: {
+                        responseMimeType: 'application/json',
+                        responseSchema: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    id: { type: Type.INTEGER },
+                                    newDescription: { type: Type.STRING }
+                                },
+                                required: ['id', 'newDescription']
+                            }
+                        }
+                    }
+                });
+
+                const enhancedData = JSON.parse(response.text);
+                const enhancedMap = new Map(enhancedData.map((item: any) => [item.id, item.newDescription]));
+
+                const enhancedCourses = initialCourses.map(course => ({
+                    ...course,
+                    description: enhancedMap.get(course.id) || course.description
+                }));
+
+                setCourses(enhancedCourses);
+
+                // Save to cache (exclude icon components from JSON)
+                const cachePayload = {
+                    timestamp: Date.now(),
+                    courses: enhancedCourses.map(({ icon, ...rest }) => rest)
+                };
+                localStorage.setItem('academyCoursesCache', JSON.stringify(cachePayload));
+
+            } catch (aiError) {
+                console.warn("AI enhancement failed, falling back to original descriptions:", aiError);
+                // Fallback to original content
+                setCourses(initialCourses);
+            }
 
         } catch (err) {
             if (err instanceof Error) {

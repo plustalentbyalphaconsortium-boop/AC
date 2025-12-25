@@ -16,7 +16,7 @@ const FeatureCard: React.FC<{ feature: Feature; setActiveView: (view: View) => v
         >
             <div className="flex items-center gap-4 mb-3">
                 <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 transition-transform duration-300 group-hover:scale-110">
-                    <Icon className="h-6 w-6" aria-hidden="true" />
+                    {Icon ? <Icon className="h-6 w-6" aria-hidden="true" /> : <span className="h-6 w-6 block bg-blue-200/50 rounded-full" />}
                 </div>
                 <h3 className="text-md font-bold text-gray-900 dark:text-white">{title}</h3>
             </div>

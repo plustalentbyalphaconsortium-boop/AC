@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { VideoCameraIcon, SparklesIcon, XMarkIcon } from './icons/Icons';
+import { VideoCameraIcon, SparklesIcon, XMarkIcon, ChevronDownIcon } from './icons/Icons';
 
 const loadingMessages = [
     "Initializing video generation...",
@@ -15,6 +15,9 @@ const loadingMessages = [
 const VideoGenerator: React.FC = () => {
     const [prompt, setPrompt] = useState('');
     const [image, setImage] = useState<{ base64: string; mimeType: string; name: string; } | null>(null);
+    const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
+    const [resolution, setResolution] = useState<'720p' | '1080p'>('720p');
+    
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
@@ -25,7 +28,7 @@ const VideoGenerator: React.FC = () => {
 
     useEffect(() => {
         const checkKey = async () => {
-            if (await window.aistudio.hasSelectedApiKey()) {
+            if (window.aistudio && await window.aistudio.hasSelectedApiKey()) {
                 setIsKeySelected(true);
             }
         };
@@ -33,9 +36,11 @@ const VideoGenerator: React.FC = () => {
     }, []);
 
     const handleSelectKey = async () => {
-        await window.aistudio.openSelectKey();
-        // Assume key selection is successful to avoid race conditions.
-        setIsKeySelected(true);
+        if (window.aistudio) {
+            await window.aistudio.openSelectKey();
+            // Assume key selection is successful to avoid race conditions.
+            setIsKeySelected(true);
+        }
     };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +85,11 @@ const VideoGenerator: React.FC = () => {
             const requestPayload: any = {
                 model: 'veo-3.1-fast-generate-preview',
                 prompt: prompt,
-                config: { numberOfVideos: 1 }
+                config: { 
+                    numberOfVideos: 1,
+                    resolution: resolution,
+                    aspectRatio: aspectRatio
+                }
             };
 
             if (image) {
@@ -114,10 +123,10 @@ const VideoGenerator: React.FC = () => {
         } catch (e: any) {
             console.error(e);
             if (e.message?.includes("Requested entity was not found.")) {
-                setError("Your API key is invalid. Please select a valid key and try again.");
+                setError("Your API key is invalid or not selected. Please select a valid key and try again.");
                 setIsKeySelected(false);
             } else {
-                setError(`An error occurred during video generation: ${e.message}. Please check your API key and try again.`);
+                setError(`An error occurred during video generation: ${e.message}.`);
             }
         } finally {
             setIsLoading(false);
@@ -175,17 +184,57 @@ const VideoGenerator: React.FC = () => {
                             </label>
                             <textarea
                                 id="video-prompt"
-                                rows={5}
+                                rows={4}
                                 className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                placeholder="e.g., A majestic eagle soaring over a mountain range at sunrise"
+                                placeholder="e.g., A cinematic drone shot of a futuristic city in the Balkans at sunset..."
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 disabled={isLoading}
                             />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="aspect-ratio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aspect Ratio</label>
+                                <div className="relative">
+                                    <select 
+                                        id="aspect-ratio"
+                                        value={aspectRatio} 
+                                        onChange={(e) => setAspectRatio(e.target.value as any)}
+                                        className="w-full appearance-none bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isLoading}
+                                    >
+                                        <option value="16:9">Landscape (16:9)</option>
+                                        <option value="9:16">Portrait (9:16)</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                        <ChevronDownIcon className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="resolution" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Resolution</label>
+                                <div className="relative">
+                                    <select 
+                                        id="resolution"
+                                        value={resolution} 
+                                        onChange={(e) => setResolution(e.target.value as any)}
+                                        className="w-full appearance-none bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isLoading}
+                                    >
+                                        <option value="720p">720p HD</option>
+                                        <option value="1080p">1080p Full HD</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                        <ChevronDownIcon className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                2. Add a starting image (Optional)
+                                3. Add a starting image (Optional)
                             </span>
                              <input
                                 type="file"
@@ -196,19 +245,19 @@ const VideoGenerator: React.FC = () => {
                                 disabled={isLoading}
                             />
                             {image ? (
-                                <div className="mt-2 relative">
-                                    <img src={`data:${image.mimeType};base64,${image.base64}`} alt="Image preview" className="rounded-lg w-full max-h-48 object-cover border border-gray-300 dark:border-gray-600" />
-                                     <button onClick={removeImage} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/75" aria-label="Remove image">
+                                <div className="mt-2 relative group">
+                                    <img src={`data:${image.mimeType};base64,${image.base64}`} alt="Image preview" className="rounded-lg w-full max-h-48 object-cover border border-gray-300 dark:border-gray-600 transition-opacity group-hover:opacity-90" />
+                                     <button onClick={removeImage} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-red-600 transition-colors" aria-label="Remove image">
                                         <XMarkIcon className="h-4 w-4" />
                                     </button>
                                 </div>
                             ) : (
                                 <button
                                     onClick={triggerFileSelect}
-                                    className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-gray-50/50 dark:bg-gray-900/20"
                                     disabled={isLoading}
                                 >
-                                    Click to upload image
+                                    Click to upload a reference frame
                                 </button>
                             )}
                         </div>
@@ -216,44 +265,47 @@ const VideoGenerator: React.FC = () => {
                             <button
                                 onClick={handleGenerateVideo}
                                 disabled={isLoading || !prompt}
-                                className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
+                                className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-[1.02] active:scale-95 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
                             >
                                 <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                                Generate Video
+                                {isLoading ? 'Generating...' : 'Generate Video'}
                             </button>
                         </div>
                     </div>
 
                     {/* Output Section */}
-                    <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-blue-500/20 aspect-video flex items-center justify-center flex-col sticky top-24 shadow-md dark:shadow-none">
+                    <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-blue-500/20 aspect-video flex items-center justify-center flex-col sticky top-24 shadow-md dark:shadow-none overflow-hidden">
                         {isLoading ? (
-                            <div className="text-center" aria-live="polite">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400 mx-auto"></div>
-                                <p className="mt-4 text-gray-600 dark:text-gray-300 font-semibold">{loadingMessage}</p>
-                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Video generation can take a few minutes. Please stay on this page.</p>
+                            <div className="text-center w-full px-4" aria-live="polite">
+                                <div className="relative w-16 h-16 mx-auto mb-6">
+                                    <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-200 dark:border-blue-900 rounded-full"></div>
+                                    <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                                </div>
+                                <p className="text-gray-800 dark:text-gray-200 font-bold text-lg animate-pulse">{loadingMessage}</p>
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">This usually takes about 1-2 minutes.</p>
                             </div>
                         ) : error ? (
-                             <div role="alert" className="text-center text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30 p-4 rounded-md">
-                                <h3 className="font-bold">Generation Failed</h3>
+                             <div role="alert" className="text-center text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-900/30 p-6 rounded-lg max-w-sm">
+                                <h3 className="font-bold mb-2">Generation Failed</h3>
                                 <p className="text-sm">{error}</p>
                             </div>
                         ) : generatedVideoUrl ? (
-                            <div className="w-full animate-scale-in">
-                                <video src={generatedVideoUrl} controls autoPlay loop className="w-full rounded-md" />
+                            <div className="w-full h-full flex flex-col animate-scale-in">
+                                <video src={generatedVideoUrl} controls autoPlay loop className="w-full h-full object-contain rounded-md bg-black" />
                                 <div className="mt-4 text-center">
                                     <a
                                         href={generatedVideoUrl}
                                         download={`alpha-consortium-video-${lastUsedPrompt.slice(0, 20).replace(/\s/g, '_')}.mp4`}
-                                        className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+                                        className="inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 transition-colors"
                                     >
-                                        Download Video
+                                        Download MP4
                                     </a>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center text-gray-500 dark:text-gray-400 select-none">
-                                <VideoCameraIcon className="h-12 w-12 mx-auto" />
-                                <p className="mt-2">Your generated video will appear here</p>
+                            <div className="text-center text-gray-400 dark:text-gray-600 select-none">
+                                <VideoCameraIcon className="h-16 w-16 mx-auto opacity-50" />
+                                <p className="mt-4 font-medium">Your video masterpiece will appear here</p>
                             </div>
                         )}
                     </div>
