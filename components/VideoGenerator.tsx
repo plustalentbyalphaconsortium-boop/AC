@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { VideoCameraIcon, SparklesIcon, XMarkIcon, ChevronDownIcon } from './icons/Icons';
+import { VideoCameraIcon, SparklesIcon, XMarkIcon, ChevronDownIcon, ArrowPathIcon } from './icons/Icons';
 
 const loadingMessages = [
     "Initializing video generation...",
@@ -19,6 +19,7 @@ const VideoGenerator: React.FC = () => {
     const [resolution, setResolution] = useState<'720p' | '1080p'>('720p');
     
     const [isLoading, setIsLoading] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -60,6 +61,24 @@ const VideoGenerator: React.FC = () => {
         };
         reader.onerror = () => setError('Failed to read the image file.');
         reader.readAsDataURL(file);
+    };
+
+    const handleEnhancePrompt = async () => {
+        if (!prompt) return;
+        setIsEnhancing(true);
+        try {
+             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+             const response = await ai.models.generateContent({
+                 model: 'gemini-3-flash-preview',
+                 contents: `Rewrite this video prompt to be more descriptive, cinematic, and detailed for an AI video generator. Keep it under 3 sentences. Prompt: "${prompt}"`,
+             });
+             setPrompt(response.text.trim());
+        } catch (e) {
+            console.error("Enhance failed", e);
+            // Fail silently or show subtle indication
+        } finally {
+            setIsEnhancing(false);
+        }
     };
 
     const handleGenerateVideo = async () => {
@@ -151,7 +170,7 @@ const VideoGenerator: React.FC = () => {
                     <VideoCameraIcon className="h-12 w-12 mx-auto text-blue-500" />
                     <h2 className="mt-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl font-orbitron">API Key Required</h2>
                     <p className="mt-4 text-gray-600 dark:text-gray-300">
-                        To use the AI Video Generator, you need to select an API key. This feature may incur costs based on usage.
+                        To use the AI Video Generator (Veo), you need to select a paid API key. This feature generates high-quality video content.
                         Please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">billing documentation</a> for more details.
                     </p>
                     <div className="mt-6">
@@ -172,16 +191,26 @@ const VideoGenerator: React.FC = () => {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">AI Video Generator</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Bring your ideas to life. Generate short videos from text or an image.</p>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Bring your ideas to life. Generate short videos from text or an image using Gemini Veo.</p>
                 </div>
 
                 <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     {/* Input Section */}
                     <div className="space-y-6">
                         <div>
-                            <label htmlFor="video-prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                1. Describe your video
-                            </label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label htmlFor="video-prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    1. Describe your video
+                                </label>
+                                <button 
+                                    onClick={handleEnhancePrompt}
+                                    disabled={isEnhancing || !prompt}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 disabled:opacity-50"
+                                >
+                                    {isEnhancing ? <ArrowPathIcon className="h-3 w-3 animate-spin" /> : <SparklesIcon className="h-3 w-3" />}
+                                    {isEnhancing ? 'Enhancing...' : 'Magic Enhance'}
+                                </button>
+                            </div>
                             <textarea
                                 id="video-prompt"
                                 rows={4}
@@ -267,8 +296,17 @@ const VideoGenerator: React.FC = () => {
                                 disabled={isLoading || !prompt}
                                 className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all transform hover:scale-[1.02] active:scale-95 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
                             >
-                                <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                                {isLoading ? 'Generating...' : 'Generate Video'}
+                                {isLoading ? (
+                                    <>
+                                        <VideoCameraIcon className="h-5 w-5 mr-2 animate-pulse" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <SparklesIcon className="h-5 w-5 mr-2" aria-hidden="true" />
+                                        Generate Video
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

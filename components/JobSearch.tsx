@@ -139,7 +139,7 @@ const JobCard: React.FC<{
 
                 **Task:**
                 1. Calculate a compatibility score from 0 to 100 based on skills, experience, and role alignment.
-                2. Provide a concise, 1-sentence reason explaining the score (e.g., "Strong skill match but lacks leadership experience.").
+                2. Provide a concise explanation (2 sentences max). First sentence explains the score. Second sentence MUST suggest one specific skill or experience the candidate should emphasize to improve their fit for this role.
 
                 Return JSON: { "score": number, "reason": "string" }
             `;
