@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { Analytics } from "@vercel/analytics/react";
 import Header from './components/Header';
 import Hero from './components/Hero';
 import JobSearch from './components/JobSearch';
@@ -268,6 +269,7 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
       <Footer />
+      <Analytics />
     </div>
   );
 };
