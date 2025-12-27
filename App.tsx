@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -268,6 +269,7 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
       <Footer />
+      <Analytics />
     </div>
   );
 };
