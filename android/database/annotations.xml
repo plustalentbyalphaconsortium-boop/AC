@@ -1,5 +1,6 @@
 <root>
     <item name='android.database.AbstractCursor void finalize()'>
         <annotation name='java.lang.Deprecated' />
+        <annotation name='org.jetbrains.annotations.Blocking' />
     </item>
 </root>
