@@ -36,6 +36,10 @@ const SEOManager: React.FC<SEOManagerProps> = ({ activeView, activeJob, activeRe
         title = 'Real-time Job Market Analytics | Alpha Consortium';
         description = 'AI-driven insights into global employment trends, salary data, and emerging skill demands.';
         break;
+      case View.OfferSense:
+        title = 'OfferSense - AI Offer Letter Analyzer | Alpha Consortium';
+        description = 'Analyze your job offer letter for salary competitiveness, red flags, and get an AI-generated negotiation strategy.';
+        break;
     }
 
     // Individual Job SEO (if a job is selected/focused)

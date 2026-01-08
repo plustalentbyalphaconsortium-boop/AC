@@ -18,6 +18,7 @@ export enum View {
   VibeCheck = 'VibeCheck',
   HRServices = 'HRServices',
   VisaTrack = 'VisaTrack',
+  OfferSense = 'OfferSense',
 }
 
 export interface Feature {
@@ -48,6 +49,8 @@ export interface Job {
     sameAs?: string;
     logo?: string;
   };
+  isExternal?: boolean; // New field
+  applyUrl?: string;    // New field
 }
 
 export interface JobAlertSubscription {
@@ -189,4 +192,14 @@ export interface VisaRoadmapData {
     }[];
     culturalTips: string[];
     interviewPrep: string[];
+}
+
+export interface OfferAnalysis {
+    score: number;
+    salaryAssessment: string;
+    benefitsSummary: string;
+    redFlags: string[];
+    pros: string[];
+    negotiationStrategy: string[];
+    counterOfferDraft: string;
 }

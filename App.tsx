@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { Analytics } from "@vercel/analytics/react";
 import Header from './components/Header';
 import Hero from './components/Hero';
 import JobSearch from './components/JobSearch';
@@ -23,6 +22,7 @@ import HRServices from './components/HRServices';
 import VisaTrack from './components/VisaTrack';
 import AITutorialAssistant from './components/AITutorialAssistant';
 import SEOManager from './components/SEOManager';
+import OfferSense from './components/OfferSense';
 import { View, Feature, AICommand, TutorialStep } from './types';
 import { 
     SparklesIcon, 
@@ -37,7 +37,8 @@ import {
     HeartIcon,
     VideoCameraIcon,
     BriefcaseIcon,
-    MapPinIcon
+    MapPinIcon,
+    ScaleIcon
 } from './components/icons/Icons';
 
 
@@ -192,6 +193,7 @@ const App: React.FC = () => {
       { view: View.SkillCoach, title: 'AI Skill Coach', description: 'Get a personalized roadmap to master any new skill.', icon: CpuChipIcon },
       { view: View.VibeCheck, title: 'Career Vibe Check', description: 'Discover jobs that match your personality.', icon: HeartIcon },
       { view: View.VideoGenerator, title: 'AI Video Generator', description: 'Create stunning short videos from text prompts.', icon: VideoCameraIcon },
+      { view: View.OfferSense, title: 'OfferSense', description: 'Analyze job offers and get negotiation strategies.', icon: ScaleIcon },
       { view: View.HRServices, title: 'For Employers', description: 'Access our full suite of HR and recruitment solutions.', icon: BriefcaseIcon },
   ];
 
@@ -225,6 +227,8 @@ const App: React.FC = () => {
         return <CloudSync />;
       case View.VibeCheck:
         return <VibeCheck />;
+      case View.OfferSense:
+        return <OfferSense />;
       case View.HRServices:
         return <HRServices setActiveView={handleSetView} />;
       case View.VisaTrack:
@@ -269,7 +273,6 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
       <Footer />
-      <Analytics />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription, UserProfile } from '../types';
 import { getJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ChartBarIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ChartBarIcon, ArrowPathIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import AlertSubscriptionModal from './AlertSubscriptionModal';
 import ManageAlertsModal from './ManageAlertsModal';
@@ -181,7 +181,12 @@ const JobCard: React.FC<{
     };
 
     return (
-        <li className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none animate-scale-in relative">
+        <li className={`bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border transition-all duration-300 flex flex-col shadow-sm hover:shadow-lg dark:shadow-none animate-scale-in relative ${job.isExternal ? 'border-purple-200 dark:border-purple-500/20' : 'border-gray-200 dark:border-blue-500/20'}`}>
+            {job.isExternal && (
+                <div className="absolute top-0 right-0 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg border-b border-l border-purple-200 dark:border-purple-800">
+                    WEB RESULT
+                </div>
+            )}
             <div className="flex justify-between items-start">
                 <div className="pr-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{highlightedTitle}</h3>
@@ -195,7 +200,7 @@ const JobCard: React.FC<{
                         )}
                     </p>
                 </div>
-                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                 <div className="flex flex-col items-end gap-2 flex-shrink-0 mt-6">
                     <span className="text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300 px-2 py-1 rounded-full">{job.type}</span>
                     {isTracked && (
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[job.applicationStatus!]}`}>
@@ -245,7 +250,7 @@ const JobCard: React.FC<{
                             id={`status-${job.id}`}
                             value={status}
                             onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 sm:text-sm rounded-md"
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 sm:text-sm rounded-md"
                         >
                             {APPLICATION_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -279,9 +284,20 @@ const JobCard: React.FC<{
 
             <div className="mt-4">
                 {!isTracked ? (
-                     <button ref={applyButtonRef} onClick={() => onApplyNow(job)} aria-label={`Apply now for ${job.title} at ${job.company}`} className="w-full rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800">
-                        Apply Now
-                    </button>
+                    job.isExternal ? (
+                        <a 
+                            href={job.applyUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                        >
+                            Apply on Company Site ↗
+                        </a>
+                    ) : (
+                        <button ref={applyButtonRef} onClick={() => onApplyNow(job)} aria-label={`Apply now for ${job.title} at ${job.company}`} className="w-full rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800">
+                            Apply Now
+                        </button>
+                    )
                 ) : !isEditing && (
                     <button 
                         ref={updateButtonRef}
@@ -409,6 +425,10 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiFeedback, setAiFeedback] = useState('');
 
+    // Web Search State
+    const [isWebSearching, setIsWebSearching] = useState(false);
+    const [externalJobs, setExternalJobs] = useState<Job[]>([]);
+
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -472,6 +492,63 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
             console.error("Failed to save subscriptions to localStorage", error);
         }
     }, [subscriptions]);
+
+    const handleWebSearch = async () => {
+        if (!searchTerm) return;
+        setIsWebSearching(true);
+        setExternalJobs([]);
+        
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const prompt = `
+                Find 5-8 recent, real-world job listings matching this search: "${searchTerm}" in category "${activeCategory}".
+                
+                For each job found via Google Search, extract:
+                - Job Title
+                - Company Name
+                - Location
+                - A short description (20 words max)
+                - Job Type (Full-time/Part-time/Contract) - guess if not explicit.
+                - Link to apply (if available in grounding, otherwise use google search link).
+
+                Return a JSON array of objects with keys: title, company, location, type, description, applyUrl.
+            `;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    responseMimeType: 'application/json'
+                }
+            });
+
+            // Handle response which might be markdown wrapped
+            const text = response.text.replace(/^```json\s*|```$/g, '');
+            const jobs = JSON.parse(text);
+            
+            const formattedJobs: Job[] = jobs.map((j: any, index: number) => ({
+                id: 10000 + index + Date.now(), // Generate unique temp ID
+                title: j.title || 'Unknown Role',
+                company: j.company || 'Unknown Company',
+                location: j.location || 'Remote',
+                type: j.type || 'Full-time',
+                category: activeCategory,
+                description: j.description || 'No description available.',
+                applyUrl: j.applyUrl || `https://www.google.com/search?q=${encodeURIComponent(j.title + ' ' + j.company + ' jobs')}`,
+                isExternal: true
+            }));
+
+            setExternalJobs(formattedJobs);
+            setAiFeedback(`Found ${formattedJobs.length} live jobs from the web!`);
+
+        } catch (e) {
+            console.error("Web search failed", e);
+            setAiFeedback("Couldn't fetch live jobs right now.");
+        } finally {
+            setIsWebSearching(false);
+        }
+    }
 
     const handleAiSearch = async () => {
         if (!aiQuery.trim()) return;
@@ -664,7 +741,10 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
 
 
     const filteredJobs = useMemo(() => {
-        const preFilteredJobs = allJobs.filter(job => {
+        // Combine platform jobs and fetched external jobs
+        const combinedJobs = [...externalJobs, ...allJobs];
+
+        const preFilteredJobs = combinedJobs.filter(job => {
             const matchesCategory = activeCategory === 'All' || job.category === activeCategory;
             const matchesType = activeTypeFilter === 'All' || job.type === activeTypeFilter;
             const matchesStatus = (() => {
@@ -685,11 +765,11 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                 job,
                 score: calculateRelevance(job, searchTerm),
             }))
-            .filter(item => item.score > 0.1)
+            .filter(item => item.score > 0.1 || item.job.isExternal) // Always show external results if they exist in state
             .sort((a, b) => b.score - a.score);
             
         return scoredJobs.map(item => item.job);
-    }, [allJobs, activeCategory, activeTypeFilter, searchTerm, activeStatusFilter, minSalaryFilter]);
+    }, [allJobs, externalJobs, activeCategory, activeTypeFilter, searchTerm, activeStatusFilter, minSalaryFilter]);
     
     const resultsCount = filteredJobs.length;
     const resultsText = `${resultsCount} job${resultsCount !== 1 ? 's' : ''} found.`;
@@ -723,7 +803,7 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                         filteredJobs.map(job => <JobCard key={job.id} job={job} onUpdate={handleUpdateJob} onClear={handleClearTracking} onApplyNow={setApplyingForJob} searchTerm={searchTerm} userProfile={userProfile} />)
                     ) : (
                         <li className="text-gray-500 dark:text-gray-400 col-span-full text-center py-10">
-                            <p>No jobs found matching your criteria.</p>
+                            <p>No jobs found matching your criteria. Try "Scout Web" to check real-time listings.</p>
                         </li>
                     )}
                 </ul>
@@ -766,10 +846,10 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                     </div>
                     {aiFeedback && (
                         <div className="mt-3 flex justify-center">
-                            <p className={`text-xs font-medium px-4 py-1.5 rounded-full animate-scale-in border ${aiFeedback.includes('Applied') ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-200 text-red-500'}`}>
+                            <p className={`text-xs font-medium px-4 py-1.5 rounded-full animate-scale-in border ${aiFeedback.includes('Applied') || aiFeedback.includes('Found') ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-200 text-red-500'}`}>
                                 {aiFeedback}
-                                {aiFeedback.includes('Applied') && (
-                                    <button onClick={() => { setSearchTerm(''); setActiveCategory('All'); setMinSalaryFilter(null); setActiveTypeFilter('All'); setAiFeedback(''); }} className="ml-2 underline opacity-70 hover:opacity-100">Reset</button>
+                                {(aiFeedback.includes('Applied') || aiFeedback.includes('Found')) && (
+                                    <button onClick={() => { setSearchTerm(''); setActiveCategory('All'); setMinSalaryFilter(null); setActiveTypeFilter('All'); setAiFeedback(''); setExternalJobs([]); }} className="ml-2 underline opacity-70 hover:opacity-100">Reset</button>
                                 )}
                             </p>
                         </div>
@@ -778,19 +858,34 @@ const JobSearch: React.FC<JobSearchProps> = ({ initialSearchTerm = '', initialCa
                 
                 <div className="mt-12 max-w-4xl mx-auto space-y-8">
                     {/* Standard Keyword Search */}
-                    <div className="relative" data-tutorial-id="job-search-input">
+                    <div className="relative flex gap-2" data-tutorial-id="job-search-input">
                          <label htmlFor="job-search-input" className="sr-only">Search keywords, titles, or locations</label>
-                         <input
-                            id="job-search-input"
-                            type="text"
-                            placeholder="Standard search keywords..."
-                            value={searchTerm}
-                            onChange={(e) => { setSearchTerm(e.target.value); setAiFeedback(''); }}
-                            className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                        />
-                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                        </div>
+                         <div className="relative flex-grow">
+                            <input
+                                id="job-search-input"
+                                type="text"
+                                placeholder="Standard search keywords..."
+                                value={searchTerm}
+                                onChange={(e) => { setSearchTerm(e.target.value); setAiFeedback(''); }}
+                                className="w-full bg-white dark:bg-gray-900/50 border-2 border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 pl-10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                            />
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                         </div>
+                         <button
+                            onClick={handleWebSearch}
+                            disabled={isWebSearching || !searchTerm}
+                            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg text-sm font-semibold transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap shadow-sm"
+                            title="Find real jobs on Google"
+                         >
+                            {isWebSearching ? (
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            ) : (
+                                <ArrowPathIcon className="h-5 w-5" />
+                            )}
+                            <span className="hidden sm:inline">Scout Web</span>
+                         </button>
                     </div>
                     
                     {/* Filter Section */}

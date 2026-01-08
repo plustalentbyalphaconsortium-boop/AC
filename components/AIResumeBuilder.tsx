@@ -172,7 +172,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 
 const CoverLetterPreview: React.FC<{ text: string }> = ({ text }) => (
     <div className="p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 rounded-md shadow-inner font-sans text-sm">
-        <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300">
+        <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed">
             {text}
         </pre>
     </div>
@@ -189,7 +189,6 @@ const AIResumeBuilder: React.FC = () => {
     const [selectedTemplate, setSelectedTemplate] = useState<Template>('Modern');
     const [selectedTone, setSelectedTone] = useState<Tone>('Professional');
     const [activeTool, setActiveTool] = useState<ActiveTool>('resume');
-    const [infoMessage, setInfoMessage] = useState('');
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
     const [generatedResume, setGeneratedResume] = useState<AIResumeData | null>(null);
@@ -200,10 +199,6 @@ const AIResumeBuilder: React.FC = () => {
 
     const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
     const [isLoadingCoverLetter, setIsLoadingCoverLetter] = useState(false);
-    const [coverLetterCopied, setCoverLetterCopied] = useState(false);
-
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const jobDescriptionRef = useRef<HTMLTextAreaElement>(null);
 
     const templates: Template[] = ['Modern', 'Classic', 'Compact'];
     const tones: Tone[] = ['Professional', 'Creative', 'Bold'];
@@ -313,7 +308,39 @@ const AIResumeBuilder: React.FC = () => {
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            const prompt = `Write a ${selectedTone} cover letter for: ${jobDescription}. Based on: ${userExperience}. Achievements: ${keyAchievements}. Body only.`;
+            
+            let toneInstruction = '';
+            switch (selectedTone) {
+                case 'Creative':
+                    toneInstruction = 'Use a creative, storytelling approach. Hook the reader with a unique opening and vivid language that reflects the candidate\'s personality.';
+                    break;
+                case 'Bold':
+                    toneInstruction = 'Be bold, confident, and direct. Emphasize achievements, leadership potential, and value proposition strongly.';
+                    break;
+                case 'Professional':
+                default:
+                    toneInstruction = 'Maintain a strictly professional, polite, and corporate tone. Focus on reliability, competence, and formal respect.';
+                    break;
+            }
+
+            const prompt = `
+                Write a cover letter for the following job.
+                
+                **Tone:** ${selectedTone}
+                **Instruction:** ${toneInstruction}
+                
+                **Job Description:**
+                ${jobDescription}
+                
+                **Candidate Experience:**
+                ${userExperience}
+                
+                **Key Achievements to Highlight:**
+                ${keyAchievements}
+                
+                Output only the body of the cover letter. Do not include placeholders like [Your Name] unless necessary for context.
+            `;
+
             const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
             setGeneratedCoverLetter(response.text);
         } catch (e) {
@@ -416,8 +443,8 @@ const AIResumeBuilder: React.FC = () => {
                 </div>
 
                 <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8 justify-center">
-                    <button onClick={() => setActiveTool('resume')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'resume' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Resume Builder</button>
-                    <button onClick={() => setActiveTool('coverLetter')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'coverLetter' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Cover Letter</button>
+                    <button onClick={() => setActiveTool('resume')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'resume' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>Resume Builder</button>
+                    <button onClick={() => setActiveTool('coverLetter')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'coverLetter' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>Cover Letter</button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -426,7 +453,7 @@ const AIResumeBuilder: React.FC = () => {
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Job Description</label>
                             <textarea
                                 rows={5}
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Paste the job requirements here..."
                                 value={jobDescription}
                                 onChange={(e) => setJobDescription(e.target.value)}
@@ -443,7 +470,7 @@ const AIResumeBuilder: React.FC = () => {
                             </div>
                             <textarea
                                 rows={5}
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Paste your resume or background..."
                                 value={userExperience}
                                 onChange={(e) => setUserExperience(e.target.value)}
@@ -451,19 +478,32 @@ const AIResumeBuilder: React.FC = () => {
                             {fileName && <p className="text-xs text-green-500 mt-2">File Loaded: {fileName}</p>}
                         </section>
 
+                        <section className="bg-white dark:bg-gray-800/40 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Key Achievements (Optional)</label>
+                            <textarea
+                                rows={3}
+                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="List 2-3 specific wins or metrics you want to emphasize (e.g., 'Increased sales by 20%')..."
+                                value={keyAchievements}
+                                onChange={(e) => setKeyAchievements(e.target.value)}
+                            />
+                        </section>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tone</label>
-                                <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value as Tone)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm">
+                                <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value as Tone)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     {tones.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Template</label>
-                                <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as Template)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm">
-                                    {templates.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </div>
+                            {activeTool === 'resume' && (
+                                <div className="animate-scale-in">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Template</label>
+                                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as Template)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        {templates.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                            )}
                         </div>
 
                         <button
@@ -474,6 +514,7 @@ const AIResumeBuilder: React.FC = () => {
                             {(isLoadingResume || isLoadingCoverLetter) ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <SparklesIcon className="h-5 w-5" />}
                             Generate {activeTool === 'resume' ? 'Tailored Resume' : 'Cover Letter'}
                         </button>
+                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                     </div>
 
                     <div className="relative">
@@ -481,8 +522,8 @@ const AIResumeBuilder: React.FC = () => {
                             <div className="bg-gray-50 dark:bg-gray-800/20 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 min-h-[500px] overflow-hidden flex flex-col">
                                 {activeTool === 'resume' && generatedResume ? (
                                     <div className="flex-1 overflow-y-auto">
-                                        <div className="p-4 flex justify-end gap-2 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
-                                             <button onClick={handleDownloadPdf} className="p-2 text-gray-500 hover:text-blue-600" title="Download PDF"><DocumentArrowDownIcon className="h-5 w-5" /></button>
+                                        <div className="p-4 flex justify-end gap-2 bg-white/50 dark:bg-black/20 backdrop-blur-sm sticky top-0 z-10">
+                                             <button onClick={handleDownloadPdf} className="p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Download PDF"><DocumentArrowDownIcon className="h-5 w-5" /></button>
                                         </div>
                                         <ResumePreview 
                                             data={generatedResume} 

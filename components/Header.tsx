@@ -192,6 +192,7 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
                   { title: 'AI Assistant', view: View.AIAssistant },
                   { title: 'AI Resume Builder', view: View.AIResume },
                   { title: 'AI Interview Prep', view: View.InterviewPrep },
+                  { title: 'OfferSense', view: View.OfferSense },
                   { title: 'AI Career Path', view: View.CareerPath },
                   { title: 'AI Skill Coach', view: View.SkillCoach },
                   { title: 'Career Vibe Check', view: View.VibeCheck },
