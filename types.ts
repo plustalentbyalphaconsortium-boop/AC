@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export enum View {
@@ -19,6 +20,9 @@ export enum View {
   HRServices = 'HRServices',
   VisaTrack = 'VisaTrack',
   OfferSense = 'OfferSense',
+  SalaryBridge = 'SalaryBridge',
+  CulturalSimulator = 'CulturalSimulator',
+  Pulse = 'Pulse',
 }
 
 export interface Feature {
@@ -49,8 +53,8 @@ export interface Job {
     sameAs?: string;
     logo?: string;
   };
-  isExternal?: boolean; // New field
-  applyUrl?: string;    // New field
+  isExternal?: boolean;
+  applyUrl?: string;
 }
 
 export interface JobAlertSubscription {
@@ -103,7 +107,7 @@ export interface CareerPathData {
 export type AICommand = {
   action: 'NAVIGATE' | 'SEARCH_JOBS' | 'TUTORIAL';
   params?: {
-    view?: string; // Should match a View enum key
+    view?: string;
     searchTerm?: string;
     category?: string;
   };

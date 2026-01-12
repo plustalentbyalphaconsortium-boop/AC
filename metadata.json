@@ -1,7 +1,8 @@
 {
   "name": "Alpha Consortium",
-  "description": "Alpha Consortium is an innovative Human Resource and Manpower ecosystem connecting skilled talent from Bangladesh and Nepal with employers in the Balkan region. We aim to eliminate middlemen and empower individuals through skill development and transparent, ethical recruitment.",
+  "description": "Alpha Consortium is the premier industrial and technological alliance bridging South Asian talent with the Balkan industrial landscape. Our ecosystem leverages cutting-edge AI for ethical recruitment, cultural integration, and strategic career scaling.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera"
   ]
 }

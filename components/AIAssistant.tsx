@@ -119,7 +119,7 @@ const AIAssistant: React.FC = () => {
 
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-            let systemInstruction = 'You are a career assistant for the Alpha Consortium platform.';
+            let systemInstruction = 'You are a career assistant for the Plus Talent Global platform.';
 
             switch (selectedTone) {
                 case 'Professional':
@@ -142,7 +142,7 @@ const AIAssistant: React.FC = () => {
             }
 
             const sessionPromise = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
                 callbacks: {
                     onopen: () => {
                         setConnectionState('connected');

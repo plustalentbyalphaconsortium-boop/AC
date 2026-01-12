@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon, DocumentArrowDownIcon, CheckCircleIcon, ArrowPathIcon } from './icons/Icons';
+import { SparklesIcon, ClipboardIcon, LightbulbIcon, EnvelopeIcon, DocumentArrowDownIcon, CheckCircleIcon, ArrowPathIcon, RocketLaunchIcon, BriefcaseIcon, UserCircleIcon, ExclamationTriangleIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
 import { AIResumeData, UserProfile } from '../types';
 
@@ -22,6 +22,8 @@ interface ResumePreviewProps {
     isCopied: boolean;
 }
 
+const HeadlineArchetypes = ['The Authority', 'The Innovator', 'The Results-Driven', 'The Visionary'];
+
 const ResumePreview: React.FC<ResumePreviewProps> = ({ 
     data, 
     template, 
@@ -33,20 +35,14 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     onCopy,
     isCopied
 }) => {
-    const [showSuggestions, setShowSuggestions] = useState(false);
-
-    useEffect(() => {
-        setShowSuggestions(false);
-    }, [data.headlineSuggestions]);
-
     const baseClasses = {
         container: 'p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 rounded-md shadow-inner font-sans text-sm relative group',
-        headline: 'text-center text-xl sm:text-2xl font-bold mb-1 text-gray-900 dark:text-gray-100',
-        sectionTitle: 'text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200',
-        hr: 'my-4 border-t border-gray-200 dark:border-gray-700',
-        ul: 'list-disc list-inside space-y-1 pl-2',
+        headline: 'text-center text-xl sm:text-2xl font-bold mb-1 text-gray-900 dark:text-gray-100 font-orbitron',
+        sectionTitle: 'text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 pb-1 mb-3',
+        hr: 'my-6 border-t border-gray-200 dark:border-gray-700',
+        ul: 'list-disc list-inside space-y-1.5 pl-2',
         li: 'text-gray-600 dark:text-gray-400',
-        p: 'text-gray-600 dark:text-gray-400'
+        p: 'text-gray-600 dark:text-gray-400 leading-relaxed'
     };
 
     const templateStyles: Record<Template, Partial<typeof baseClasses>> = {
@@ -54,13 +50,11 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
         Classic: {
             headline: 'text-center text-lg sm:text-xl font-bold tracking-wider uppercase mb-2 text-gray-800 dark:text-gray-200',
             sectionTitle: 'text-xs sm:text-sm font-bold tracking-widest uppercase mb-2 text-gray-700 dark:text-gray-300 border-b-2 pb-1 border-gray-300 dark:border-gray-600',
-            hr: 'my-3 border-t border-gray-300 dark:border-gray-600',
         },
         Compact: {
             headline: 'text-center text-lg sm:text-xl font-semibold mb-1 text-gray-900 dark:text-gray-100',
             sectionTitle: 'text-base sm:text-lg font-semibold mb-1 text-gray-800 dark:text-gray-200',
-            hr: 'my-2 border-t border-gray-200 dark:border-gray-700',
-            ul: 'list-disc list-inside space-y-0.5 pl-2', 
+            hr: 'my-4 border-t border-gray-200 dark:border-gray-700',
         }
     };
 
@@ -68,102 +62,88 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 
     return (
         <div className={templateClasses.container}>
-            <div className="text-center mb-1 relative">
-                <h2 className={templateClasses.headline}>{data.headline}</h2>
-                <div className="flex items-center justify-center gap-4 mt-1">
-                    {data.headlineSuggestions && data.headlineSuggestions.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setShowSuggestions(prev => !prev)}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-                            aria-expanded={showSuggestions}
-                        >
-                            {showSuggestions ? 'Hide' : 'Alternate'} Headlines
-                        </button>
-                    )}
+            {/* Unique Feature: Headline Archetype Switcher */}
+            <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Tailored Headlines</span>
                     <button
                         type="button"
                         onClick={onRegenerateHeadlines}
                         disabled={isRegeneratingHeadlines}
-                        className="p-1 rounded-full text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:text-gray-400 disabled:cursor-wait"
-                        title="Regenerate headline suggestions"
+                        className="text-xs flex items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors"
                     >
-                        {isRegeneratingHeadlines ? (
-                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <SparklesIcon className="h-4 w-4" />
-                        )}
+                        {isRegeneratingHeadlines ? <ArrowPathIcon className="h-3 w-3 animate-spin" /> : <ArrowPathIcon className="h-3 w-3" />}
+                        Refresh Variations
                     </button>
                 </div>
-            </div>
-             {showSuggestions && (
-                <div className="flex flex-wrap gap-2 justify-center my-3 animate-scale-in bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {data.headlineSuggestions.map((suggestion, i) => (
                         <button
                             key={i}
-                            type="button"
                             onClick={() => onHeadlineChange(suggestion)}
-                            className={`px-3 py-1.5 text-xs rounded-md transition-all duration-200 border text-left w-full ${
+                            className={`p-2 rounded-lg text-[10px] font-bold transition-all border text-center ${
                                 data.headline === suggestion
-                                ? 'bg-blue-600 text-white font-semibold border-blue-600 shadow-sm'
-                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                                : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-blue-400'
                             }`}
                         >
-                            {suggestion}
+                            <div className="opacity-50 mb-1">{HeadlineArchetypes[i]}</div>
+                            <div className="truncate">{suggestion}</div>
                         </button>
                     ))}
                 </div>
-            )}
-            <hr className={templateClasses.hr} />
+            </div>
+
+            <div className="text-center mb-8">
+                <h2 className={templateClasses.headline}>{data.headline}</h2>
+                <div className="w-16 h-1 bg-blue-600 mx-auto mt-2 rounded-full"></div>
+            </div>
             
             <section>
-                <h3 className={templateClasses.sectionTitle}>Summary</h3>
+                <h3 className={templateClasses.sectionTitle}>Strategic Summary</h3>
                 <p className={templateClasses.p}>{data.summary}</p>
             </section>
             
-            <section>
-                <div className="flex justify-between items-center mt-4 mb-2">
+            <section className="mt-8">
+                <div className="flex justify-between items-center mb-2">
                     <h3 className={templateClasses.sectionTitle}>Key Skills</h3>
                     <button
                         type="button"
+                        // Fix: Changed handleRegenerateSkills to onRegenerateSkills to match props
                         onClick={onRegenerateSkills}
                         disabled={isRegeneratingSkills}
-                        className="p-1 rounded-full text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:text-gray-400 disabled:cursor-wait"
-                        aria-label="Regenerate key skills"
+                        className="p-1 rounded-full text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                     >
-                        {isRegeneratingSkills ? (
-                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <SparklesIcon className="h-4 w-4" />
-                        )}
+                        <SparklesIcon className={`h-4 w-4 ${isRegeneratingSkills ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
-                <ul className={templateClasses.ul}>
-                    {data.keySkills.map((skill, i) => <li key={i} className={templateClasses.li}>{skill}</li>)}
-                </ul>
+                <div className="flex flex-wrap gap-2">
+                    {data.keySkills.map((skill, i) => (
+                        <span key={i} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700">
+                            {skill}
+                        </span>
+                    ))}
+                </div>
             </section>
             
-            <section>
-                <h3 className={`${templateClasses.sectionTitle} mt-4 mb-2`}>Experience Highlights</h3>
+            <section className="mt-8">
+                <h3 className={templateClasses.sectionTitle}>Experience Highlights</h3>
                  <ul className={templateClasses.ul}>
                     {data.experienceHighlights.map((highlight, i) => <li key={i} className={templateClasses.li}>{highlight}</li>)}
                 </ul>
             </section>
 
-            <div className="mt-8 flex justify-center border-t border-gray-100 dark:border-gray-800 pt-6">
+            <div className="mt-12 flex justify-center border-t border-gray-100 dark:border-gray-800 pt-6 gap-4">
                 <button
                     onClick={onCopy}
                     className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${
                         isCopied 
                         ? 'bg-green-600 text-white shadow-lg scale-105' 
-                        : 'bg-blue-600 text-white hover:bg-blue-500 shadow hover:shadow-lg active:scale-95'
+                        : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md active:scale-95'
                     }`}
                 >
-                    {isCopied ? (
-                        <><CheckCircleIcon className="h-5 w-5" /> Copied!</>
-                    ) : (
-                        <><ClipboardIcon className="h-5 w-5" /> Copy Text</>
-                    )}
+                    {isCopied ? <CheckCircleIcon className="h-5 w-5" /> : <ClipboardIcon className="h-5 w-5" />}
+                    {isCopied ? 'Copied!' : 'Copy Text'}
                 </button>
             </div>
         </div>
@@ -171,12 +151,95 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 };
 
 const CoverLetterPreview: React.FC<{ text: string }> = ({ text }) => (
-    <div className="p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 rounded-md shadow-inner font-sans text-sm">
-        <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed">
+    <div className="p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 rounded-md shadow-inner font-sans text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        <pre className="whitespace-pre-wrap font-sans">
             {text}
         </pre>
     </div>
 );
+
+// Helper component for enhanced input fields
+const EnhancedInput: React.FC<{
+    label: string;
+    value: string;
+    onChange: (val: string) => void;
+    placeholder: string;
+    maxLength?: number;
+    minLength?: number;
+    showUpload?: boolean;
+    // Fix: Updated prop type from () => void to include ChangeEvent argument
+    onUploadClick?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    fileName?: string;
+    id: string;
+}> = ({ label, value, onChange, placeholder, maxLength = 5000, minLength = 50, showUpload, onUploadClick, fileName, id }) => {
+    const charCount = value.length;
+    const isTooShort = charCount > 0 && charCount < minLength;
+    const isExceeding = charCount > maxLength;
+    
+    // Quality Score Logic (0-100)
+    const qualityScore = Math.min(100, Math.max(0, (charCount / 800) * 100));
+    const scoreColor = qualityScore > 70 ? 'bg-green-500' : qualityScore > 30 ? 'bg-yellow-500' : 'bg-red-500';
+
+    return (
+        <div className="space-y-2">
+            <div className="flex justify-between items-end">
+                <label htmlFor={id} className="block text-xs font-black uppercase tracking-widest text-gray-400">
+                    {label}
+                </label>
+                <div className="flex items-center gap-3">
+                    {showUpload && (
+                         <label className="text-xs text-blue-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
+                            <ArrowPathIcon className="h-3 w-3" /> {fileName ? 'Change File' : 'Upload CV'}
+                            <input type="file" className="hidden" accept=".pdf,.docx" onChange={onUploadClick as any} />
+                        </label>
+                    )}
+                    <span className={`text-[10px] font-bold ${isExceeding ? 'text-red-500' : 'text-gray-500'}`}>
+                        {charCount} / {maxLength}
+                    </span>
+                </div>
+            </div>
+            
+            <div className="relative">
+                <textarea
+                    id={id}
+                    rows={6}
+                    className={`w-full bg-gray-50 dark:bg-gray-900 border rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-sans leading-relaxed ${
+                        isTooShort ? 'border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.5)]' : 
+                        isExceeding ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]' : 
+                        'border-gray-200 dark:border-gray-700'
+                    }`}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                />
+                
+                {/* Visual Quality Bar */}
+                <div className="absolute bottom-3 right-3 w-20 h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden opacity-40 hover:opacity-100 transition-opacity">
+                    <div 
+                        className={`h-full transition-all duration-700 ${scoreColor}`} 
+                        style={{ width: `${qualityScore}%` }}
+                    />
+                </div>
+            </div>
+
+            <div className="flex justify-between items-start min-h-[1.5rem]">
+                {isTooShort ? (
+                    <p className="text-[10px] text-yellow-600 dark:text-yellow-500 font-bold flex items-center gap-1 animate-pulse">
+                        <ExclamationTriangleIcon className="h-3 w-3" /> Input is quite short. More detail usually yields better results.
+                    </p>
+                ) : isExceeding ? (
+                    <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                        <ExclamationTriangleIcon className="h-3 w-3" /> Character limit exceeded. Please shorten your input.
+                    </p>
+                ) : fileName ? (
+                     <p className="text-[10px] text-green-500 font-bold flex items-center gap-1">
+                        <CheckCircleIcon className="h-3 w-3" /> {fileName} parsed successfully
+                    </p>
+                ) : null}
+            </div>
+        </div>
+    );
+};
 
 const AIResumeBuilder: React.FC = () => {
     const [jobDescription, setJobDescription] = useState('');
@@ -184,7 +247,6 @@ const AIResumeBuilder: React.FC = () => {
     const [keyAchievements, setKeyAchievements] = useState('');
     const [error, setError] = useState('');
     const [isParsingFile, setIsParsingFile] = useState(false);
-    const [fileError, setFileError] = useState('');
     const [fileName, setFileName] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState<Template>('Modern');
     const [selectedTone, setSelectedTone] = useState<Tone>('Professional');
@@ -228,14 +290,13 @@ const AIResumeBuilder: React.FC = () => {
         if (!file) return;
 
         setIsParsingFile(true);
-        setFileError('');
         setFileName(file.name);
 
         try {
             const text = await parseFile(file);
             setUserExperience(text);
         } catch (err: any) {
-            setFileError(err);
+            setError(err);
         } finally {
             setIsParsingFile(false);
         }
@@ -243,8 +304,8 @@ const AIResumeBuilder: React.FC = () => {
     };
 
     const handleGenerateResume = async () => {
-        if (!jobDescription || !userExperience) {
-            setError('Please fill in both job description and your experience.');
+        if (jobDescription.length < 20 || userExperience.length < 20) {
+            setError('Please provide more detailed information in both fields for a quality resume.');
             return;
         }
         setIsLoadingResume(true);
@@ -255,15 +316,15 @@ const AIResumeBuilder: React.FC = () => {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             
             const prompt = `
-                Create professional tailored resume content.
+                Create professional tailored resume content for a South Asian candidate moving to the Balkans.
                 Tone: ${selectedTone}
                 Job: ${jobDescription}
                 Experience: ${userExperience}
                 Achievements: ${keyAchievements}
 
                 Output JSON with:
-                - headlineSuggestions: 4 variations
-                - summary: 3-4 sentences
+                - headlineSuggestions: 4 distinct variations (Professional, Innovative, Achievement-focused, Visionary)
+                - summary: 3-4 sentences highlighting regional adaptability
                 - keySkills: 8-10 items
                 - experienceHighlights: 5 items
             `;
@@ -308,37 +369,14 @@ const AIResumeBuilder: React.FC = () => {
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            
-            let toneInstruction = '';
-            switch (selectedTone) {
-                case 'Creative':
-                    toneInstruction = 'Use a creative, storytelling approach. Hook the reader with a unique opening and vivid language that reflects the candidate\'s personality.';
-                    break;
-                case 'Bold':
-                    toneInstruction = 'Be bold, confident, and direct. Emphasize achievements, leadership potential, and value proposition strongly.';
-                    break;
-                case 'Professional':
-                default:
-                    toneInstruction = 'Maintain a strictly professional, polite, and corporate tone. Focus on reliability, competence, and formal respect.';
-                    break;
-            }
-
             const prompt = `
-                Write a cover letter for the following job.
+                Write a professional cover letter for a candidate applying from Bangladesh/Nepal to a Balkan company.
+                Tone: ${selectedTone}
+                Job: ${jobDescription}
+                Candidate background: ${userExperience}
+                Highlights: ${keyAchievements}
                 
-                **Tone:** ${selectedTone}
-                **Instruction:** ${toneInstruction}
-                
-                **Job Description:**
-                ${jobDescription}
-                
-                **Candidate Experience:**
-                ${userExperience}
-                
-                **Key Achievements to Highlight:**
-                ${keyAchievements}
-                
-                Output only the body of the cover letter. Do not include placeholders like [Your Name] unless necessary for context.
+                Address regional relocation interest and cultural readiness. Output only the letter body.
             `;
 
             const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
@@ -382,7 +420,7 @@ const AIResumeBuilder: React.FC = () => {
         setIsRegeneratingHeadlines(true);
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            const prompt = `Generate 5 compelling resume headlines for this job: ${jobDescription}. Based on this experience: ${userExperience}. Tone: ${selectedTone}. JSON output only.`;
+            const prompt = `Generate 4 compelling resume headlines for this job: ${jobDescription}. Based on this experience: ${userExperience}. Tone: ${selectedTone}. JSON output only.`;
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
                 contents: prompt,
@@ -426,104 +464,92 @@ const AIResumeBuilder: React.FC = () => {
         if (!generatedResume) return;
         const { jsPDF } = jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(20);
-        doc.text(generatedResume.headline, 10, 20);
-        doc.setFontSize(12);
-        doc.text("Summary", 10, 35);
-        doc.text(doc.splitTextToSize(generatedResume.summary, 180), 10, 42);
-        doc.save('resume.pdf');
+        doc.setFontSize(22);
+        doc.text(generatedResume.headline, 20, 20);
+        doc.setFontSize(14);
+        doc.text("Strategic Summary", 20, 35);
+        doc.setFontSize(10);
+        doc.text(doc.splitTextToSize(generatedResume.summary, 170), 20, 42);
+        doc.save('alpha_tailored_resume.pdf');
     };
 
     return (
         <div className="py-16 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold font-orbitron neon-text">AI Application Studio</h2>
                     <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Instantly tailor your profile for any Balkan region opportunity.</p>
                 </div>
 
-                <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8 justify-center">
-                    <button onClick={() => setActiveTool('resume')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'resume' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>Resume Builder</button>
-                    <button onClick={() => setActiveTool('coverLetter')} className={`px-6 py-3 text-sm font-bold ${activeTool === 'coverLetter' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>Cover Letter</button>
+                <div className="flex border-b border-gray-200 dark:border-gray-800 mb-10 justify-center">
+                    <button onClick={() => setActiveTool('resume')} className={`px-8 py-4 text-sm font-bold flex items-center gap-2 ${activeTool === 'resume' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                        <UserCircleIcon className="h-4 w-4" /> Resume Builder
+                    </button>
+                    <button onClick={() => setActiveTool('coverLetter')} className={`px-8 py-4 text-sm font-bold flex items-center gap-2 ${activeTool === 'coverLetter' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                        <EnvelopeIcon className="h-4 w-4" /> Cover Letter
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="space-y-6">
-                        <section className="bg-white dark:bg-gray-800/40 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Job Description</label>
-                            <textarea
-                                rows={5}
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Paste the job requirements here..."
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div className="lg:col-span-5 space-y-6">
+                        <div className="bg-white dark:bg-gray-800/30 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
+                            
+                            <EnhancedInput 
+                                id="resume-job-description"
+                                label="Job Description"
+                                placeholder="Paste the Balkan job requirements here..."
                                 value={jobDescription}
-                                onChange={(e) => setJobDescription(e.target.value)}
+                                onChange={setJobDescription}
                             />
-                        </section>
 
-                        <section className="bg-white dark:bg-gray-800/40 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">Your Experience</label>
-                                <label className="text-xs text-blue-600 font-bold cursor-pointer hover:underline">
-                                    Upload PDF/DOCX
-                                    <input type="file" className="hidden" accept=".pdf,.docx" onChange={handleFileChange} />
-                                </label>
-                            </div>
-                            <textarea
-                                rows={5}
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Paste your resume or background..."
+                            <EnhancedInput 
+                                id="resume-experience"
+                                label="Your Experience"
+                                placeholder="Paste your current resume or experience..."
                                 value={userExperience}
-                                onChange={(e) => setUserExperience(e.target.value)}
+                                onChange={setUserExperience}
+                                showUpload
+                                onUploadClick={handleFileChange}
+                                fileName={fileName}
                             />
-                            {fileName && <p className="text-xs text-green-500 mt-2">File Loaded: {fileName}</p>}
-                        </section>
 
-                        <section className="bg-white dark:bg-gray-800/40 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Key Achievements (Optional)</label>
-                            <textarea
-                                rows={3}
-                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="List 2-3 specific wins or metrics you want to emphasize (e.g., 'Increased sales by 20%')..."
-                                value={keyAchievements}
-                                onChange={(e) => setKeyAchievements(e.target.value)}
-                            />
-                        </section>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tone</label>
-                                <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value as Tone)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    {tones.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </div>
-                            {activeTool === 'resume' && (
-                                <div className="animate-scale-in">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Template</label>
-                                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as Template)} className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        {templates.map(t => <option key={t} value={t}>{t}</option>)}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Voice Tone</label>
+                                    <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value as Tone)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        {tones.map(t => <option key={t} value={t}>{t}</option>)}
                                     </select>
                                 </div>
-                            )}
-                        </div>
+                                {activeTool === 'resume' && (
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Template</label>
+                                        <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as Template)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            {templates.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
 
-                        <button
-                            onClick={handleMainAction}
-                            disabled={isLoadingResume || isLoadingCoverLetter}
-                            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                        >
-                            {(isLoadingResume || isLoadingCoverLetter) ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <SparklesIcon className="h-5 w-5" />}
-                            Generate {activeTool === 'resume' ? 'Tailored Resume' : 'Cover Letter'}
-                        </button>
-                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                            <button
+                                id="resume-generate-button"
+                                onClick={handleMainAction}
+                                disabled={isLoadingResume || isLoadingCoverLetter}
+                                className="w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2 transform active:scale-95"
+                            >
+                                {(isLoadingResume || isLoadingCoverLetter) ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <RocketLaunchIcon className="h-5 w-5" />}
+                                Generate {activeTool === 'resume' ? 'Tailored CV' : 'Cover Letter'}
+                            </button>
+                            {error && <p className="text-red-500 text-xs font-bold text-center animate-bounce mt-2">{error}</p>}
+                        </div>
                     </div>
 
-                    <div className="relative">
+                    <div className="lg:col-span-7">
                         <div className="sticky top-24">
-                            <div className="bg-gray-50 dark:bg-gray-800/20 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 min-h-[500px] overflow-hidden flex flex-col">
+                            <div className="bg-gray-50 dark:bg-gray-800/10 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 min-h-[600px] overflow-hidden flex flex-col shadow-inner">
                                 {activeTool === 'resume' && generatedResume ? (
-                                    <div className="flex-1 overflow-y-auto">
-                                        <div className="p-4 flex justify-end gap-2 bg-white/50 dark:bg-black/20 backdrop-blur-sm sticky top-0 z-10">
-                                             <button onClick={handleDownloadPdf} className="p-2 text-gray-500 hover:text-blue-600 transition-colors" title="Download PDF"><DocumentArrowDownIcon className="h-5 w-5" /></button>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+                                        <div className="p-4 flex justify-end gap-2 bg-white/80 dark:bg-black/40 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+                                             <button onClick={handleDownloadPdf} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-blue-100 transition-colors" title="Download PDF"><DocumentArrowDownIcon className="h-4 w-4" /> Download PDF</button>
                                         </div>
                                         <ResumePreview 
                                             data={generatedResume} 
@@ -538,13 +564,18 @@ const AIResumeBuilder: React.FC = () => {
                                         />
                                     </div>
                                 ) : activeTool === 'coverLetter' && generatedCoverLetter ? (
-                                    <div className="flex-1 overflow-y-auto p-4">
+                                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                         <CoverLetterPreview text={generatedCoverLetter} />
                                     </div>
                                 ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-center p-10 text-gray-400">
-                                        <SparklesIcon className="h-12 w-12 mb-4 opacity-20" />
-                                        <p>Generate content to see the live preview here.</p>
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
+                                        <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center animate-pulse">
+                                            <SparklesIcon className="h-10 w-10 text-blue-500 opacity-50" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white font-orbitron">Ready to Build</h3>
+                                            <p className="text-gray-400 text-sm max-w-xs mx-auto">Fill in the job details to generate your optimized application content.</p>
+                                        </div>
                                     </div>
                                 )}
                             </div>

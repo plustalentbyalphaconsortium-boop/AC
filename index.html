@@ -1,9 +1,31 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Alpha Consortium</title>
+    
+    <!-- Primary SEO -->
+    <title>ALPHA CONSORTIUM | Ethical Industrial Talent Alliance</title>
+    <meta name="title" content="ALPHA CONSORTIUM | Ethical Industrial Talent Alliance">
+    <meta name="description" content="The premier industrial talent bridge connecting South Asian skilled professionals with Balkan manufacturing hubs. AI-powered ethical recruitment and relocation.">
+    <meta name="keywords" content="Alpha Consortium, Industrial Jobs Balkans, Romania Recruitment, Nepal Talent, Bangladesh Skilled Workers, Ethical Hiring, International Relocation AI">
+    <link rel="canonical" href="https://alphaconsortium.ai/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://alphaconsortium.ai/">
+    <meta property="og:title" content="ALPHA CONSORTIUM | Ethical Industrial Talent Alliance">
+    <meta property="og:description" content="Direct talent corridors between South Asia and the Balkans. No middlemen. AI-powered matchmaking.">
+    <meta property="og:image" content="https://alphaconsortium.ai/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://alphaconsortium.ai/">
+    <meta property="twitter:title" content="ALPHA CONSORTIUM | Ethical Industrial Talent Alliance">
+    <meta property="twitter:description" content="Strategic talent corridors. Data-driven career scaling for industrial excellence.">
+    <meta property="twitter:image" content="https://alphaconsortium.ai/og-image.jpg">
+
     <script>
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
@@ -16,7 +38,19 @@
       tailwind.config = {
         darkMode: 'class',
         theme: {
-          extend: {},
+          extend: {
+            fontFamily: {
+              orbitron: ['Orbitron', 'sans-serif'],
+              poppins: ['Poppins', 'sans-serif'],
+            },
+            colors: {
+              alpha: {
+                blue: '#4169e1',
+                cyan: '#06b6d4',
+                slate: '#1e293b'
+              }
+            }
+          },
         }
       }
     </script>
@@ -28,62 +62,47 @@
         font-family: 'Poppins', sans-serif;
       }
       .dark body {
-        background-color: #0c0a18;
-        background-image: 
-          radial-gradient(ellipse 80% 80% at 50% -20%,rgba(33, 41, 92,0.5), rgba(255,255,255,0));
+        background-color: #05050a;
       }
       .font-orbitron {
         font-family: 'Orbitron', sans-serif;
       }
-      /* Darker color for WCAG 2.1 Contrast Compliance (4.5:1) */
       .neon-text {
-        color: #1e3a8a;
-        text-shadow: 0 0 1px rgba(65, 105, 225, 0.2);
+        color: #4169e1;
+        text-shadow: 0 0 5px rgba(65, 105, 225, 0.4);
       }
       .dark .neon-text {
         color: #fff;
         text-shadow:
-          0 0 5px rgba(173, 216, 230, 0.9),
-          0 0 10px rgba(173, 216, 230, 0.9),
-          0 0 20px rgba(65, 105, 225, 0.9);
+          0 0 5px rgba(65, 105, 225, 0.8),
+          0 0 10px rgba(65, 105, 225, 0.6),
+          0 0 20px rgba(65, 105, 225, 0.4);
+      }
+      .alpha-gradient-text {
+        background: linear-gradient(135deg, #fff 0%, #4169e1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
       .neon-border {
          border-color: #4169e1;
          box-shadow: 0 0 3px rgba(65, 105, 225, 0.8), 0 0 6px rgba(65, 105, 225, 0.6);
       }
-      .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
+      @keyframes glow-pulse {
+        0%, 100% { opacity: 0.5; filter: blur(20px); }
+        50% { opacity: 1; filter: blur(30px); }
       }
-      @keyframes pulse-border {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(65, 105, 225, 0.4); }
-        50% { box-shadow: 0 0 0 4px rgba(65, 105, 225, 0); }
-      }
-      .animate-pulse-border {
-        animation: pulse-border 1.5s infinite;
-      }
-      @keyframes scale-in {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-      }
-      .animate-scale-in {
-          animation: scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .animate-scale-in, .animate-pulse-border, .animate-zoom-out-view {
-          animation: none !important;
-          transition: none !important;
-        }
+      .glow-bg {
+        animation: glow-pulse 4s infinite ease-in-out;
       }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      @keyframes slide-up {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-slide-up {
+        animation: slide-up 0.5s ease-out forwards;
+      }
     </style>
   <script type="importmap">
 {

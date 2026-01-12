@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { View } from '../types';
@@ -13,7 +14,7 @@ const GoogleSnippetPreview: React.FC<{ job: any }> = ({ job }) => (
   <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm font-sans max-w-xl">
     <div className="flex items-center gap-2 mb-1">
       <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-[10px] text-white font-bold">A</div>
-      <div className="text-xs text-gray-800 dark:text-gray-300">alphaconsortium.com › jobs › {job.category.toLowerCase()}</div>
+      <div className="text-xs text-gray-800 dark:text-gray-300">plustalentglobal.com › jobs › {job.category.toLowerCase()}</div>
     </div>
     <div className="text-xl text-blue-800 dark:text-blue-400 hover:underline cursor-pointer mb-1">
       {job.title || 'Job Title'} - {job.company || 'Company Name'}
@@ -181,7 +182,7 @@ const PostJob: React.FC<PostJobProps> = ({ setActiveView }) => {
                             </div>
                              <div className="text-center pt-4">
                                 <button type="submit" disabled={isPosting || !!success} className="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-blue-500 transition-all transform hover:scale-[1.02] disabled:opacity-50">
-                                    {isPosting ? 'Publishing...' : success ? 'Published!' : 'Post to Alpha Consortium'}
+                                    {isPosting ? 'Publishing...' : success ? 'Published!' : 'Post to Plus Talent Global'}
                                 </button>
                                 {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
                                 {success && <p className="mt-2 text-green-500 text-sm">{success}</p>}

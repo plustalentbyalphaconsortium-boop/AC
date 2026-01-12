@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Course } from '../types';
 import { getCourses } from '../api';
@@ -141,12 +142,14 @@ const Academy: React.FC = () => {
                     }
                 });
 
-                const enhancedData = JSON.parse(response.text);
-                const enhancedMap = new Map(enhancedData.map((item: any) => [item.id, item.newDescription]));
+                // Fix: Explicitly cast and type the response text parsing to avoid unknown property errors
+                const enhancedData = JSON.parse(response.text || '[]') as any[];
+                const enhancedMap = new Map<number, string>(enhancedData.map((item: any) => [item.id, item.newDescription]));
 
-                const enhancedCourses = initialCourses.map(course => ({
+                // Fix: Ensure the resulting array matches the Course interface with a guaranteed string for description
+                const enhancedCourses: Course[] = initialCourses.map(course => ({
                     ...course,
-                    description: enhancedMap.get(course.id) || course.description
+                    description: (enhancedMap.get(course.id) || course.description) as string
                 }));
 
                 setCourses(enhancedCourses);
