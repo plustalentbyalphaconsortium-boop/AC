@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export enum View {
@@ -23,6 +22,7 @@ export enum View {
   SalaryBridge = 'SalaryBridge',
   CulturalSimulator = 'CulturalSimulator',
   Pulse = 'Pulse',
+  IndustrialTranslator = 'IndustrialTranslator'
 }
 
 export interface Feature {

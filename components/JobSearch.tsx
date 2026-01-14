@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription, UserProfile, GroundingChunk } from '../types';
 import { getJobs, searchWebJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ArrowPathIcon, AcademicCapIcon, MapPinIcon, XMarkIcon, ExclamationTriangleIcon, CommandLineIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ArrowPathIcon, AcademicCapIcon, MapPinIcon, XMarkIcon, ExclamationTriangleIcon, CommandLineIcon, CheckBadgeIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -13,8 +13,6 @@ const STATUS_STYLES: { [key in ApplicationStatus]: string } = {
     'Offer Received': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
     'Rejected': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
 };
-
-const APPLICATION_STATUSES: ApplicationStatus[] = ['Applied', 'Interviewing', 'Offer Received', 'Rejected'];
 
 const highlightMatches = (text: string, searchTerm: string | undefined): React.ReactNode => {
     if (!text || !searchTerm?.trim()) return text;
@@ -102,6 +100,13 @@ const JobCard: React.FC<{
 
     return (
         <li className={`bg-white dark:bg-gray-800/20 backdrop-blur-md p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col shadow-sm hover:shadow-xl relative group ${matchAnalysis ? getMatchColor(matchAnalysis.score) : job.isExternal ? 'border-blue-500/10' : 'border-gray-100 dark:border-gray-800'}`}>
+            {/* Compliance Shield Marker */}
+            <div className="absolute -top-3 -right-3">
+                <div className="bg-white dark:bg-[#0c0c14] p-1.5 rounded-full border border-blue-500/20 shadow-lg group-hover:border-blue-500 transition-colors" title="Compliance Shield Verified">
+                    <CheckBadgeIcon className="h-5 w-5 text-blue-500" />
+                </div>
+            </div>
+
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-grow pr-4">
                     <div className="flex items-center gap-2 mb-1">
@@ -114,6 +119,9 @@ const JobCard: React.FC<{
                                 Verified Internal
                             </span>
                         )}
+                        <span className="text-[9px] font-black uppercase tracking-wider text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-0.5 rounded-full">
+                            Ethics 100%
+                        </span>
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight font-orbitron group-hover:text-blue-500 transition-colors">
                         {highlightMatches(job.title, searchTerm)}

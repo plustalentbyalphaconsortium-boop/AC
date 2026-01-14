@@ -13,10 +13,25 @@ interface HeaderProps {
 
 const AlphaLogo: React.FC = () => (
     <div className="flex items-center gap-3 cursor-pointer group">
-        <div className="relative w-8 h-8 flex items-center justify-center">
-            <div className="absolute inset-0 bg-blue-600/20 rounded group-hover:rotate-45 transition-transform duration-500"></div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400 relative z-10">
-                <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
+        <div className="relative w-9 h-9 flex items-center justify-center">
+            {/* Logo Backdrop Glow */}
+            <div className="absolute inset-0 bg-blue-600/10 rounded-full blur-md group-hover:bg-blue-600/20 transition-all duration-500"></div>
+            
+            {/* Reconstructed Logo from Image */}
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 transition-transform duration-500 group-hover:scale-110">
+                {/* Main Triangle Structure */}
+                <path d="M50 5L95 85H5L50 5Z" stroke="#4169e1" strokeWidth="6" strokeLinejoin="round" fill="rgba(5, 5, 10, 0.8)"/>
+                
+                {/* Inner Cutouts / Secondary Triangles */}
+                <path d="M50 35L75 80H25L50 35Z" stroke="#4169e1" strokeWidth="2" fill="rgba(65, 105, 225, 0.1)"/>
+                
+                {/* Center Diamond / Core */}
+                <path d="M50 20L65 50L50 80L35 50L50 20Z" fill="#e2e8f0" className="dark:fill-white opacity-90"/>
+                
+                {/* Decorative Horizontal Lines in Diamond */}
+                <line x1="42" y1="45" x2="58" y2="45" stroke="#4169e1" strokeWidth="1" strokeDasharray="2 2" />
+                <line x1="40" y1="50" x2="60" y2="50" stroke="#4169e1" strokeWidth="1" strokeDasharray="2 2" />
+                <line x1="42" y1="55" x2="58" y2="55" stroke="#4169e1" strokeWidth="1" strokeDasharray="2 2" />
             </svg>
         </div>
         <span className="font-orbitron text-base font-black tracking-[0.1em] text-gray-900 dark:text-white uppercase transition-colors group-hover:text-blue-600">
@@ -72,7 +87,6 @@ const ThemeToggle: React.FC = () => {
 
 const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenCommandBar, onStartTutorial }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const handleNavClick = (view: View) => { setActiveView(view); setIsMenuOpen(false); };
   
   const navStructure = {
@@ -108,17 +122,6 @@ const Header: React.FC<HeaderProps> = ({ activeView, setActiveView, onOpenComman
           </nav>
 
           <div className="hidden lg:flex items-center gap-2">
-            <button onClick={onStartTutorial} className="p-1.5 rounded-full text-gray-400 hover:text-blue-500 transition-colors" aria-label="Start Nexus Guide">
-                <QuestionMarkCircleIcon className="h-4 w-4" />
-            </button>
-            <button onClick={onOpenCommandBar} className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 transition-all">
-                <CommandLineIcon className="h-3.5 w-3.5" />
-                <kbd className="text-[9px] font-sans font-bold">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
-            </button>
-            <ThemeToggle />
-            <button className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white bg-blue-600 rounded shadow-lg shadow-blue-500/20 hover:bg-blue-500 transition-all hover:-translate-y-0.5">
-                Portal
-            </button>
           </div>
 
           <div className="lg:hidden flex items-center gap-2">

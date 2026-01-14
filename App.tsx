@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import Header from './components/Header';
@@ -27,6 +26,7 @@ import OfferSense from './components/OfferSense';
 import SalaryBridge from './components/SalaryBridge';
 import CulturalSimulator from './components/CulturalSimulator';
 import Pulse from './components/Pulse';
+import IndustrialTranslator from './components/IndustrialTranslator';
 import { View, Feature, AICommand, TutorialStep } from './types';
 import { 
     SparklesIcon, 
@@ -42,7 +42,8 @@ import {
     MapPinIcon,
     ScaleIcon,
     CurrencyDollarIcon,
-    CpuChipIcon
+    CpuChipIcon,
+    CommandLineIcon
 } from './components/icons/Icons';
 
 interface JobSearchState {
@@ -148,6 +149,7 @@ const App: React.FC = () => {
   
   const features: Feature[] = [
       { view: View.Pulse, title: 'Consortium Pulse', description: 'Real-time alliance hiring velocity and market impact analytics.', icon: CpuChipIcon },
+      { view: View.IndustrialTranslator, title: 'Nexus Translator', description: 'AI-powered industrial and technical terminology bridge.', icon: CommandLineIcon },
       { view: View.Jobs, title: 'Neural Matchmaking', description: 'AI-driven semantic job search across the Balkan alliance.', icon: MagnifyingGlassIcon },
       { view: View.SalaryBridge, title: 'Salary Bridge', description: 'AI purchasing power comparison between South Asia and Balkans.', icon: CurrencyDollarIcon },
       { view: View.CulturalSimulator, title: 'Balkan Fit', description: 'Psychological simulation with regional hiring managers.', icon: HeartIcon },
@@ -183,6 +185,7 @@ const App: React.FC = () => {
       case View.SalaryBridge: return <SalaryBridge />;
       case View.CulturalSimulator: return <CulturalSimulator />;
       case View.Pulse: return <Pulse />;
+      case View.IndustrialTranslator: return <IndustrialTranslator />;
       case View.Hero:
       default:
         if (initialJobSearchState) setInitialJobSearchState(null);
