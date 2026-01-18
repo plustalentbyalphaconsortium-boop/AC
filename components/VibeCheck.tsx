@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { Job, VibeJobAnalysis } from '../types';
 import { MOCK_JOBS } from '../constants';
 import { HeartIcon, SparklesIcon } from './icons/Icons';
 import ResonanceReportModal from './ResonanceReportModal';
 
-// --- VibeJobCard Component ---
 interface VibeJobCardProps {
     job: Job;
     analysis: VibeJobAnalysis | null;
@@ -62,8 +63,8 @@ const VibeJobCard: React.FC<VibeJobCardProps> = ({ job, analysis, isLoading, onV
 };
 
 
-// --- VibeCheck Main Component ---
 const VibeCheck: React.FC = () => {
+    const { theme } = useTheme();
     const [userVibe, setUserVibe] = useState('');
     const [jobKeyword, setJobKeyword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +118,7 @@ const VibeCheck: React.FC = () => {
         }
 
         setSearchedJobs(filteredJobs.map(job => ({ ...job, analysis: null, isLoading: true })));
-        setIsLoading(false); // Main loading is done, now individual cards load
+        setIsLoading(false); 
 
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
         
@@ -170,7 +171,20 @@ const VibeCheck: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Career Vibe Check</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Discover jobs that resonate with your personality and work style, not just your skills.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Discover jobs that resonate with your personality and work style, not just your skills.
+                    </p>
                 </div>
                 
                 <div className="mt-12 max-w-4xl mx-auto space-y-6">

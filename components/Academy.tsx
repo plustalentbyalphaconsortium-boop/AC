@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Course } from '../types';
 import { getCourses } from '../api';
+import { useTheme } from '../contexts/ThemeContext';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 
 const CourseCardSkeleton: React.FC = () => (
@@ -78,6 +79,7 @@ const CourseCard: React.FC<{ course: Course }> = ({ course }) => {
 };
 
 const Academy: React.FC = () => {
+    const { theme } = useTheme();
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -87,17 +89,14 @@ const Academy: React.FC = () => {
             setIsLoading(true);
             setError(null);
             
-            // 1. Get basic course data
             const initialCourses = await getCourses();
 
-            // 2. Check Cache
             const cachedData = localStorage.getItem('academyCoursesCache');
             if (cachedData) {
                 const { timestamp, courses: cachedCourses } = JSON.parse(cachedData);
-                const isRecent = (Date.now() - timestamp) < 24 * 60 * 60 * 1000; // 24 hours cache
+                const isRecent = (Date.now() - timestamp) < 24 * 60 * 60 * 1000; 
                 
                 if (isRecent && cachedCourses.length === initialCourses.length) {
-                    // Restore icons since they can't be JSON serialized
                     const hydratedCourses = cachedCourses.map((c: any, index: number) => ({
                         ...c,
                         icon: initialCourses[index].icon 
@@ -108,9 +107,7 @@ const Academy: React.FC = () => {
                 }
             }
             
-            // 3. If no cache or stale, call AI API (Batched)
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
             const prompt = `
                 Act as a professional course catalog copywriter.
                 I have a list of courses. For each course, write a new, engaging description (3-4 sentences).
@@ -142,11 +139,9 @@ const Academy: React.FC = () => {
                     }
                 });
 
-                // Fix: Explicitly cast and type the response text parsing to avoid unknown property errors
                 const enhancedData = JSON.parse(response.text || '[]') as any[];
                 const enhancedMap = new Map<number, string>(enhancedData.map((item: any) => [item.id, item.newDescription]));
 
-                // Fix: Ensure the resulting array matches the Course interface with a guaranteed string for description
                 const enhancedCourses: Course[] = initialCourses.map(course => ({
                     ...course,
                     description: (enhancedMap.get(course.id) || course.description) as string
@@ -154,7 +149,6 @@ const Academy: React.FC = () => {
 
                 setCourses(enhancedCourses);
 
-                // Save to cache (exclude icon components from JSON)
                 const cachePayload = {
                     timestamp: Date.now(),
                     courses: enhancedCourses.map(({ icon, ...rest }) => rest)
@@ -163,7 +157,6 @@ const Academy: React.FC = () => {
 
             } catch (aiError) {
                 console.warn("AI enhancement failed, falling back to original descriptions:", aiError);
-                // Fallback to original content
                 setCourses(initialCourses);
             }
 
@@ -206,7 +199,20 @@ const Academy: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Alpha Academy</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Elevate your skills with our expert-designed courses and certifications.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Elevate your skills with our expert-designed courses and certifications.
+                    </p>
                 </div>
                 <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" aria-live="polite" aria-busy={isLoading}>
                     {renderContent()}

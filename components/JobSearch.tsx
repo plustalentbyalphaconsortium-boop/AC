@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { JOB_CATEGORIES } from '../constants';
 import { Job, ApplicationStatus, JobAlertSubscription, UserProfile, GroundingChunk } from '../types';
 import { getJobs, searchWebJobs } from '../api';
-import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ArrowPathIcon, AcademicCapIcon, MapPinIcon, XMarkIcon, ExclamationTriangleIcon, CommandLineIcon, CheckBadgeIcon } from './icons/Icons';
+import { PencilIcon, TrashIcon, BellIcon, SparklesIcon, MagnifyingGlassIcon, BriefcaseIcon, CheckCircleIcon, ArrowPathIcon, AcademicCapIcon, MapPinIcon, XMarkIcon, ExclamationTriangleIcon, CommandLineIcon, CheckBadgeIcon, CpuChipIcon } from './icons/Icons';
 import ApplicationModal from './ApplicationModal';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -36,6 +36,25 @@ const highlightMatches = (text: string, searchTerm: string | undefined): React.R
     );
 };
 
+const VibeGauge: React.FC<{ score: number }> = ({ score }) => {
+    const color = score > 80 ? 'text-cyan-400' : score > 50 ? 'text-blue-400' : 'text-gray-400';
+    return (
+        <div className="relative w-12 h-12 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90">
+                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" fill="transparent" className="text-gray-100 dark:text-gray-800" />
+                <circle 
+                    cx="24" cy="24" r="20" 
+                    stroke="currentColor" strokeWidth="3" fill="transparent" 
+                    strokeDasharray={125.6} 
+                    strokeDashoffset={125.6 - (125.6 * score) / 100} 
+                    className={`${color} transition-all duration-1000 ease-out`} 
+                />
+            </svg>
+            <span className={`absolute text-[10px] font-black font-orbitron ${color}`}>{score}%</span>
+        </div>
+    );
+};
+
 const JobCard: React.FC<{
     job: Job;
     onUpdate: (id: number, updates: Partial<Pick<Job, 'applicationStatus' | 'notes'>>) => void;
@@ -43,7 +62,8 @@ const JobCard: React.FC<{
     onApplyNow: (job: Job) => void;
     searchTerm?: string;
     userProfile: UserProfile | null;
-}> = ({ job, onUpdate, onClear, onApplyNow, searchTerm, userProfile }) => {
+    autoAnalyze?: boolean;
+}> = ({ job, onUpdate, onClear, onApplyNow, searchTerm, userProfile, autoAnalyze }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [notes, setNotes] = useState(job.notes || '');
     const [status, setStatus] = useState(job.applicationStatus);
@@ -57,6 +77,12 @@ const JobCard: React.FC<{
         setStatus(job.applicationStatus);
     }, [job]);
 
+    useEffect(() => {
+        if (autoAnalyze && !matchAnalysis && !isAnalyzingMatch) {
+            handleAnalyzeMatch();
+        }
+    }, [autoAnalyze]);
+
     const handleSave = () => {
         onUpdate(job.id, { applicationStatus: status, notes });
         setIsEditing(false);
@@ -67,7 +93,11 @@ const JobCard: React.FC<{
         setIsAnalyzingMatch(true);
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            const prompt = `Match Candidate to Job. Score 0-100. Return JSON. Role: ${job.title}. Description: ${job.description}. Resume: ${userProfile.masterResume.substring(0, 800)}`;
+            const prompt = `Perform a high-level Neural Vibe Match between candidate and job. 
+            Evaluate for: 1. Cultural Alignment 2. Industrial Competency 3. Relocation Readiness.
+            Role: ${job.title}. Company: ${job.company}. Description: ${job.description}. 
+            Candidate Resume: ${userProfile.masterResume.substring(0, 1000)}`;
+            
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
                 contents: prompt,
@@ -93,14 +123,22 @@ const JobCard: React.FC<{
     };
 
     const getMatchColor = (score: number) => {
-        if (score >= 80) return 'border-green-500/50 bg-green-50/10';
-        if (score >= 50) return 'border-yellow-500/50 bg-yellow-50/10';
-        return 'border-red-500/50 bg-red-50/10';
+        if (score >= 80) return 'border-blue-500/50 bg-blue-50/5';
+        if (score >= 50) return 'border-yellow-500/30 bg-yellow-50/5';
+        return 'border-gray-200 dark:border-gray-800';
     };
 
     return (
-        <li className={`bg-white dark:bg-gray-800/20 backdrop-blur-md p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col shadow-sm hover:shadow-xl relative group ${matchAnalysis ? getMatchColor(matchAnalysis.score) : job.isExternal ? 'border-blue-500/10' : 'border-gray-100 dark:border-gray-800'}`}>
-            {/* Compliance Shield Marker */}
+        <li className={`bg-white dark:bg-[#0c0c14]/40 backdrop-blur-xl p-6 rounded-2xl border-2 transition-all duration-500 flex flex-col shadow-sm hover:shadow-2xl relative group ${matchAnalysis ? getMatchColor(matchAnalysis.score) : 'border-gray-100 dark:border-gray-800/50'}`}>
+            {/* Vibe Score Floating Badge */}
+            {matchAnalysis && (
+                <div className="absolute -top-4 -left-4 animate-scale-in z-20">
+                    <div className="bg-white dark:bg-[#05050a] p-1 rounded-full shadow-xl border border-blue-500/20">
+                        <VibeGauge score={matchAnalysis.score} />
+                    </div>
+                </div>
+            )}
+
             <div className="absolute -top-3 -right-3">
                 <div className="bg-white dark:bg-[#0c0c14] p-1.5 rounded-full border border-blue-500/20 shadow-lg group-hover:border-blue-500 transition-colors" title="Compliance Shield Verified">
                     <CheckBadgeIcon className="h-5 w-5 text-blue-500" />
@@ -119,9 +157,11 @@ const JobCard: React.FC<{
                                 Verified Internal
                             </span>
                         )}
-                        <span className="text-[9px] font-black uppercase tracking-wider text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-0.5 rounded-full">
-                            Ethics 100%
-                        </span>
+                        {matchAnalysis && matchAnalysis.score > 85 && (
+                             <span className="text-[9px] font-black uppercase tracking-wider text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-full animate-pulse">
+                                Elite Resonance
+                            </span>
+                        )}
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight font-orbitron group-hover:text-blue-500 transition-colors">
                         {highlightMatches(job.title, searchTerm)}
@@ -145,21 +185,17 @@ const JobCard: React.FC<{
 
             <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 {matchAnalysis ? (
-                    <div className="bg-blue-600/5 p-3 rounded-xl border border-blue-500/20 animate-scale-in">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Match Score</span>
-                            <span className={`text-lg font-black font-orbitron ${matchAnalysis.score > 70 ? 'text-green-500' : 'text-yellow-500'}`}>{matchAnalysis.score}%</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight italic">"{matchAnalysis.reason}"</p>
+                    <div className="bg-blue-600/5 p-3 rounded-xl border border-blue-500/10 animate-slide-up">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight italic font-medium">"{matchAnalysis.reason}"</p>
                     </div>
                 ) : userProfile?.masterResume && (
                     <button 
                         onClick={handleAnalyzeMatch}
                         disabled={isAnalyzingMatch}
-                        className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/30 rounded-xl transition-all"
+                        className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:bg-blue-600 hover:text-white border border-blue-500/30 rounded-xl transition-all group/btn"
                     >
-                        {isAnalyzingMatch ? <ArrowPathIcon className="h-3 w-3 animate-spin" /> : <SparklesIcon className="h-3 w-3" />}
-                        {isAnalyzingMatch ? 'Analyzing Fit...' : 'AI Vibe Match'}
+                        {isAnalyzingMatch ? <ArrowPathIcon className="h-3 w-3 animate-spin" /> : <SparklesIcon className="h-3 w-3 group-hover/btn:animate-pulse" />}
+                        {isAnalyzingMatch ? 'Scanning Neural Vibe...' : 'Check My Vibe'}
                     </button>
                 )}
 
@@ -214,6 +250,7 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
     const [isWebSearching, setIsWebSearching] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [applyingForJob, setApplyingForJob] = useState<Job | null>(null);
+    const [bulkAnalyze, setBulkAnalyze] = useState(false);
 
     // Initial load
     useEffect(() => {
@@ -230,7 +267,7 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
                 if (profile) setUserProfile(JSON.parse(profile));
 
                 // Auto-scan for Nexus jobs on mount
-                handleWebSearch('Balkan Jobs', activeCategory);
+                handleWebSearch('Balkan industrial roles', activeCategory);
             } catch (err) {
                 console.error("Initial load error:", err);
             } finally {
@@ -242,6 +279,7 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
 
     const handleWebSearch = async (query: string, category: string) => {
         setIsWebSearching(true);
+        setBulkAnalyze(false);
         try {
             const { jobs, sources } = await searchWebJobs(query, category);
             setExternalJobs(jobs);
@@ -293,12 +331,20 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
     const searchQuality = Math.min(100, (searchTerm.length / 30) * 100);
     const searchColor = searchQuality > 70 ? 'bg-green-500' : searchQuality > 30 ? 'bg-blue-500' : 'bg-gray-400';
 
+    const handleBulkScan = () => {
+        if (!userProfile?.masterResume) {
+            alert("Please save your resume in the Dashboard first to enable Vibe Matching.");
+            return;
+        }
+        setBulkAnalyze(true);
+    };
+
     return (
-        <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-black min-h-screen">
+        <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-[#05050a] min-h-screen">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl font-black font-orbitron text-gray-900 dark:text-white uppercase tracking-tighter mb-4">
-                        Opportunity <span className="text-blue-500">Explorer</span>
+                        Opportunity <span className="text-blue-600">Explorer</span>
                     </h2>
                     <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium">
                         Scanning the Alpha Nexus live for ethical, middleman-free roles in the Balkan region.
@@ -306,11 +352,11 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
                 </div>
 
                 {/* Advanced Search Header */}
-                <div className="bg-white dark:bg-gray-800/20 p-6 rounded-3xl border border-gray-200 dark:border-blue-500/20 shadow-2xl mb-12">
+                <div className="bg-white dark:bg-[#0c0c14]/80 backdrop-blur-2xl p-6 rounded-3xl border border-gray-200 dark:border-blue-500/20 shadow-2xl mb-12">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-                        <div className="lg:col-span-7 space-y-2">
+                        <div className="lg:col-span-6 space-y-2">
                             <div className="flex justify-between items-end">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Search Intelligence</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nexus Intelligence Search</label>
                                 <span className={`text-[9px] font-bold ${searchTerm.length > 50 ? 'text-red-500' : 'text-gray-500'}`}>
                                     {searchTerm.length} / 50
                                 </span>
@@ -323,22 +369,17 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value.slice(0, 50))}
-                                    placeholder="Search by role, company, or skills..."
+                                    placeholder="Role, tech stack, or regional industrial hub..."
                                     className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all shadow-inner font-medium"
                                 />
                                 <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                                     <div className={`h-full transition-all duration-500 ${searchColor}`} style={{ width: `${searchQuality}%` }}></div>
                                 </div>
                             </div>
-                            {searchTerm.length > 0 && searchTerm.length < 5 && (
-                                <p className="text-[9px] text-blue-500 font-bold flex items-center gap-1 animate-pulse">
-                                    <ExclamationTriangleIcon className="h-3 w-3" /> Tip: Add more keywords for better AI Vibe matching.
-                                </p>
-                            )}
                         </div>
 
                         <div className="lg:col-span-3 space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Industry Sector</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Industrial Sector</label>
                             <select 
                                 value={activeCategory} 
                                 onChange={(e) => setActiveCategory(e.target.value)}
@@ -348,15 +389,25 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
                             </select>
                         </div>
 
-                        <div className="lg:col-span-2">
+                        <div className="lg:col-span-3 flex gap-2">
                             <button 
-                                onClick={() => handleWebSearch(searchTerm || 'Balkan jobs', activeCategory)}
+                                onClick={() => handleWebSearch(searchTerm || 'Balkan industrial roles', activeCategory)}
                                 disabled={isWebSearching}
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] py-5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] py-4 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {isWebSearching ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <SparklesIcon className="h-4 w-4" />}
                                 Nexus Scan
                             </button>
+                             {userProfile?.masterResume && (
+                                <button 
+                                    onClick={handleBulkScan}
+                                    disabled={isWebSearching || bulkAnalyze}
+                                    title="Bulk AI Vibe Analysis"
+                                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-black uppercase tracking-widest text-[10px] p-4 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    <CpuChipIcon className={`h-5 w-5 ${bulkAnalyze ? 'animate-pulse' : ''}`} />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -416,6 +467,7 @@ const JobSearch: React.FC<{ initialSearchTerm?: string; initialCategory?: string
                                 onApplyNow={setApplyingForJob} 
                                 searchTerm={searchTerm}
                                 userProfile={userProfile}
+                                autoAnalyze={bulkAnalyze}
                             />
                         ))}
                     </ul>

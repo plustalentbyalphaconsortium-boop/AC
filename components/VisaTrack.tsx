@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { VisaRoadmapData } from '../types';
 import { RocketLaunchIcon, SparklesIcon, MapPinIcon, CheckBadgeIcon, ClipboardIcon } from './icons/Icons';
 
 const BALKAN_COUNTRIES = ['Romania', 'Croatia', 'Bulgaria', 'Serbia', 'Albania', 'Montenegro'];
 
 const VisaTrack: React.FC = () => {
+    const { theme } = useTheme();
     const [selectedCountry, setSelectedCountry] = useState('');
     const [roadmap, setRoadmap] = useState<VisaRoadmapData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +78,20 @@ const VisaTrack: React.FC = () => {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Balkan Bridge: AI Visa Track</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Navigate your international career move with AI-powered relocation intelligence.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Navigate your international career move with AI-powered relocation intelligence.
+                    </p>
                 </div>
 
                 <div className="mt-12 flex flex-wrap justify-center gap-4">

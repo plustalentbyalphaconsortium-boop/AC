@@ -1,10 +1,13 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { InterviewQuestionData } from '../types';
 import { SparklesIcon, LightbulbIcon, ChatBubbleOvalLeftEllipsisIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
 
 const InterviewPrep: React.FC = () => {
+    const { theme } = useTheme();
     const [jobDescription, setJobDescription] = useState('');
     const [userExperience, setUserExperience] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -16,7 +19,6 @@ const InterviewPrep: React.FC = () => {
     const [generatedData, setGeneratedData] = useState<InterviewQuestionData | null>(null);
     const allQuestions = generatedData ? [...generatedData.behavioralQuestions, ...generatedData.technicalQuestions, ...generatedData.situationalQuestions] : [];
     
-    // Mock Interview State
     const [isMockInterviewActive, setIsMockInterviewActive] = useState(false);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [userAnswer, setUserAnswer] = useState('');
@@ -309,7 +311,20 @@ const InterviewPrep: React.FC = () => {
             <div className="max-w-4xl mx-auto">
                  <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">AI Interview Prep</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Ace your next interview with AI-generated questions and real-time feedback.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Ace your next interview with AI-generated questions and real-time feedback.
+                    </p>
                 </div>
 
                 {!generatedData && !isGenerating ? (

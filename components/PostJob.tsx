@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { View } from '../types';
 import { Job } from '../types';
 import { JOB_CATEGORIES } from '../constants';
@@ -27,12 +28,13 @@ const GoogleSnippetPreview: React.FC<{ job: any }> = ({ job }) => (
 );
 
 const PostJob: React.FC<PostJobProps> = ({ setActiveView }) => {
+    const { theme } = useTheme();
     const [jobData, setJobData] = useState({
         title: '',
         company: '',
         location: '',
         type: 'Full-time' as 'Full-time' | 'Part-time' | 'Contract',
-        category: JOB_CATEGORIES[1], // Default to 'Sales'
+        category: JOB_CATEGORIES[1], 
         description: '',
         salaryMin: '',
         salaryMax: '',
@@ -138,7 +140,20 @@ const PostJob: React.FC<PostJobProps> = ({ setActiveView }) => {
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">Employer Talent Hub</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Create visible, optimized job listings for the global market.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Create visible, optimized job listings for the global market.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
@@ -190,7 +205,6 @@ const PostJob: React.FC<PostJobProps> = ({ setActiveView }) => {
                         </form>
                     </div>
 
-                    {/* SEO Preview Sidebar */}
                     <div className="lg:col-span-1 space-y-8 sticky top-24">
                         <div>
                              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

@@ -1,5 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { LearningPlanData, UserProfile, View } from '../types';
 import { MOCK_COURSES } from '../constants';
 import { CpuChipIcon, AcademicCapIcon, LightbulbIcon, SparklesIcon, BriefcaseIcon, ChevronDownIcon, CheckCircleIcon, TrashIcon } from './icons/Icons';
@@ -94,6 +96,7 @@ interface SkillCoachProps {
 }
 
 const SkillCoach: React.FC<SkillCoachProps> = ({ setActiveView }) => {
+    const { theme } = useTheme();
     const [skillQuery, setSkillQuery] = useState('');
     const [careerGoal, setCareerGoal] = useState('');
     const [learningPlan, setLearningPlan] = useState<LearningPlanData | null>(null);
@@ -101,7 +104,6 @@ const SkillCoach: React.FC<SkillCoachProps> = ({ setActiveView }) => {
     const [error, setError] = useState('');
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     
-    // State for interactive practice session
     const [exerciseSubmission, setExerciseSubmission] = useState('');
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     const [exerciseFeedback, setExerciseFeedback] = useState('');
@@ -185,7 +187,6 @@ const SkillCoach: React.FC<SkillCoachProps> = ({ setActiveView }) => {
             return;
         }
 
-        // Reset state
         setExerciseSubmission('');
         setExerciseFeedback('');
         setOpenAccordionIndex(0); 
@@ -315,7 +316,20 @@ const SkillCoach: React.FC<SkillCoachProps> = ({ setActiveView }) => {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">AI Skill Coach</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Get a personalized roadmap to master any skill, complete with course recommendations from Alpha Academy.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Get a personalized roadmap to master any skill, complete with course recommendations from Alpha Academy.
+                    </p>
                 </div>
 
                 {!learningPlan ? (

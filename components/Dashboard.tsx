@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Job, ApplicationStatus, View } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 import { UserCircleIcon, BriefcaseIcon, PencilIcon, CloudArrowUpIcon, SparklesIcon, ChartBarIcon } from './icons/Icons';
-import { MOCK_JOBS } from '../constants'; // For fetching full job details
+import { MOCK_JOBS } from '../constants'; 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 const STATUS_STYLES: { [key in ApplicationStatus]: string } = {
@@ -16,6 +18,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
+    const { theme } = useTheme();
     const [profile, setProfile] = useState<UserProfile>({
         name: '',
         email: '',
@@ -26,19 +29,17 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
     useEffect(() => {
-        // Load profile from localStorage
         try {
             const savedProfile = localStorage.getItem('userProfile');
             if (savedProfile) {
                 setProfile(JSON.parse(savedProfile));
             } else {
-                setIsEditing(true); // If no profile, start in edit mode
+                setIsEditing(true); 
             }
         } catch (error) {
             console.error("Failed to load user profile from localStorage", error);
         }
 
-        // Load tracked jobs
         try {
             const trackedJobsData = localStorage.getItem('trackedJobs');
             if (trackedJobsData) {
@@ -62,7 +63,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
     const handleSaveProfile = () => {
         setSaveStatus('saving');
         try {
-            // Read existing profile to preserve un-edited fields like lastAIResume
             const savedProfileJSON = localStorage.getItem('userProfile');
             const existingProfile = savedProfileJSON ? JSON.parse(savedProfileJSON) : {};
             const updatedProfile = { ...existingProfile, ...profile };
@@ -70,7 +70,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
             localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
             setTimeout(() => {
                 setSaveStatus('saved');
-                // Wait for the 'Saved!' message to be visible before closing the form
                 setTimeout(() => {
                     setIsEditing(false);
                     setSaveStatus('idle');
@@ -106,11 +105,23 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">My Dashboard</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Your personal career command center.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Your personal career command center.
+                    </p>
                 </div>
 
                 <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Profile Section */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-sm dark:shadow-none">
                             <div className="flex justify-between items-center mb-4">
@@ -205,7 +216,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
                         </div>
                     </div>
                     
-                    {/* Tracked Jobs Section */}
                     <div className="lg:col-span-2 space-y-6">
                         {statusData.length > 0 && (
                             <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-lg border border-gray-200 dark:border-blue-500/20 shadow-sm dark:shadow-none animate-scale-in">
@@ -213,7 +223,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
                                     <ChartBarIcon className="h-6 w-6 text-blue-500 dark:text-blue-400" />
                                     Application Insights
                                 </h3>
-                                {/* Hidden Table for Accessibility */}
                                 <table className="sr-only">
                                     <caption>Application Status Summary</caption>
                                     <thead>

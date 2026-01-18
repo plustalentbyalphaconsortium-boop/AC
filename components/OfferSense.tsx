@@ -1,10 +1,13 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { useTheme } from '../contexts/ThemeContext';
 import { OfferAnalysis } from '../types';
 import { SparklesIcon, DocumentTextIcon, CloudArrowUpIcon, XMarkIcon, ScaleIcon, CheckCircleIcon, ExclamationTriangleIcon } from './icons/Icons';
 import { parseFile } from '../utils/fileParser';
 
 const OfferSense: React.FC = () => {
+    const { theme } = useTheme();
     const [offerText, setOfferText] = useState('');
     const [analysis, setAnalysis] = useState<OfferAnalysis | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +123,20 @@ const OfferSense: React.FC = () => {
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl font-orbitron neon-text">OfferSense: AI Offer Analyzer</h2>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">Decode your job offer, spot red flags, and negotiate with confidence.</p>
+                    <p 
+                        style={{
+                            marginTop: '1rem',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            color: theme === 'dark' ? '#d1d5db' : '#4b5563',
+                            maxWidth: '42rem',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
+                            fontWeight: 500
+                        }}
+                    >
+                        Decode your job offer, spot red flags, and negotiate with confidence.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -198,7 +214,6 @@ const OfferSense: React.FC = () => {
                     <div className="space-y-6">
                         {analysis ? (
                             <div className="space-y-6 animate-scale-in">
-                                {/* Score Card */}
                                 <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-blue-500/20 shadow-lg flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Offer Quality Score</h3>
@@ -217,14 +232,12 @@ const OfferSense: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Salary & Benefits */}
                                 <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-gray-200 dark:border-blue-500/20">
                                     <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2"><SparklesIcon className="h-5 w-5 text-blue-500"/> Assessment</h4>
                                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><strong>Salary:</strong> {analysis.salaryAssessment}</p>
                                     <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Benefits:</strong> {analysis.benefitsSummary}</p>
                                 </div>
 
-                                {/* Red Flags */}
                                 {analysis.redFlags.length > 0 && (
                                     <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl border border-red-200 dark:border-red-800">
                                         <h4 className="font-bold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2"><ExclamationTriangleIcon className="h-5 w-5"/> Attention Required</h4>
@@ -238,7 +251,6 @@ const OfferSense: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Negotiation Strategy */}
                                 <div className="bg-white dark:bg-gray-800/30 p-6 rounded-xl border border-gray-200 dark:border-blue-500/20">
                                     <h4 className="font-bold text-gray-900 dark:text-white mb-3">Negotiation Strategy</h4>
                                     <ul className="space-y-2 mb-6">
